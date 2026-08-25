@@ -1,0 +1,57 @@
+{
+  "name": "tokiponize",
+  "version": "1.0.0",
+  "description": "Tokiponize proper nouns: convert names into phonotactically valid toki pona, with scored alternatives.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "tokiponize": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "MIT",
+  "author": "jan Lolin (https://github.com/laurhinch)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/laurhinch/tokiponize.git"
+  },
+  "homepage": "https://github.com/laurhinch/tokiponize#readme",
+  "bugs": {
+    "url": "https://github.com/laurhinch/tokiponize/issues"
+  },
+  "keywords": [
+    "toki pona",
+    "tokiponization",
+    "names",
+    "phonotactics",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "postbuild": "node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
+    "pretest": "tsc -p tsconfig.test.json",
+    "test": "node --test dist-test/test/*.test.js",
+    "dev": "npm run build && node dist/cli.js",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && npm test && changeset publish",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^3.0.1",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
