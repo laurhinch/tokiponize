@@ -1,4 +1,7 @@
 // Converts names into toki pona phonotactics (rules: sona.pona.la/wiki/Phonotactics)
+// and phonemes (rules: sona.pona.la/wiki/Tokiponization)
+
+import { textToTokens } from "./scripts.js";
 
 export interface Candidate {
   name: string;
@@ -12,87 +15,55 @@ export interface TokiponizeOptions {
 const CONSONANTS = new Set(["p", "t", "k", "s", "m", "n", "l", "j", "w"]);
 const VOWELS = new Set(["a", "e", "i", "o", "u"]);
 
-// English digraph rewrites
-const GRAPHEMES: Array<[RegExp, string]> = [
-  [/chr/g, "kr"],
-  [/chl/g, "kl"],
-  [/sch/g, "s"],
-  [/ch/g, "s"],
-  [/sh/g, "s"],
-  [/th/g, "t"],
-  [/ph/g, "p"],
-  [/ght/g, "t"],
-  [/gh/g, ""],
-  [/ck/g, "k"],
-  [/qu/g, "kw"],
-  [/wr/g, "l"],
-  [/wh/g, "w"],
-  [/kn/g, "n"],
-  [/ng$/g, "n"],
-  [/x/g, "ks"],
-  [/c(?=[eiy])/g, "s"],
-  [/g(?=[eiy])/g, "j"],
-  [/oo/g, "u"],
-  [/ee/g, "i"],
-  [/ea/g, "i"],
-  [/ai/g, "e"],
-  [/ay/g, "e"],
-  [/ey/g, "e"],
-  [/ei/g, "e"],
-  [/ie/g, "i"],
-  [/au/g, "o"],
-  [/aw/g, "o"],
-  [/ou/g, "u"],
-  [/ow/g, "o"],
-  [/oa/g, "o"],
-  [/oi/g, "o"],
-  [/oy/g, "o"],
-  [/ue/g, "u"],
-  [/ui/g, "u"],
-];
-
-const CHAR_MAP: Record<string, string> = {
+/** Token -> toki pona phoneme, following the wiki's place/manner/voicing chart. */
+const PHONEME_TO_TP: Record<string, string> = {
   a: "a",
   e: "e",
   i: "i",
   o: "o",
   u: "u",
-  b: "p",
-  c: "k",
-  d: "t",
-  f: "p",
-  g: "k",
-  h: "",
-  j: "j",
-  k: "k",
-  l: "l",
+  // nasals
   m: "m",
   n: "n",
+  ng: "n",
+  // plosives: place -> {p, t, k}, voicing collapses
   p: "p",
-  q: "k",
-  r: "l",
-  s: "s",
+  b: "p",
   t: "t",
+  d: "t",
+  k: "k",
+  g: "k",
+  // labial fricatives keep their voicing distinction
+  f: "p",
   v: "w",
-  w: "w",
+  // dental fricatives (thin, this)
+  th: "t",
+  // alveolar/postalveolar fricatives and affricates all become s
+  s: "s",
   z: "s",
+  sh: "s",
+  ch: "s",
+  // glottal, dropped everywhere. mid-word this leaves a hiatus the
+  // syllabifier already resolves with a glide
+  h: "",
+  // rhotic. "r" comes only from scripts with an unambiguous tap/trill
+  // (Cyrillic, Greek, Hangul, kana). Latin emits "rw" instead, defaulting
+  // to English's w: French uvular r (k) and Spanish trilled r (l) aren't
+  // distinguishable from English by spelling alone.
+  r: "l",
+  rw: "w",
+  l: "l",
+  j: "j",
+  w: "w",
 };
 
-/** Normalize raw input into the toki pona phoneme inventory. */
+/** Read raw input into the toki pona phoneme inventory. */
 export function toPhonemes(raw: string): string {
-  let s = raw
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z]/g, "");
-  if (!s) return "";
-  s = s.replace(/(.)\1+/g, "$1");
-  for (const [re, to] of GRAPHEMES) s = s.replace(re, to);
-  // y is a consonant before a vowel, otherwise a vowel
-  s = s.replace(/y(?=[aeiou])/g, "j").replace(/y/g, "i");
   let out = "";
-  for (const ch of s) out += CHAR_MAP[ch] ?? "";
-  return out.replace(/(.)\1+/g, "$1");
+  for (const tok of textToTokens(raw)) out += PHONEME_TO_TP[tok] ?? "";
+  // consonants only, same as scripts.ts: a doubled vowel here is real
+  // hiatus for the syllabifier to resolve, not noise to erase
+  return out.replace(/([^aeiou])\1+/g, "$1");
 }
 
 interface SylOption {
@@ -142,6 +113,8 @@ const BEAM_WIDTH = 40;
 
 const PEN = {
   dropConsonant: -2.5,
+  // drop the word's last consonant cheaper than a mid-cluster one
+  finalDrop: -0.75,
   dropVowel: -1.75,
   epenthesis: -1,
   glideNatural: -0.4,
@@ -165,7 +138,6 @@ function nextVowelAhead(ph: string[], from: number): string {
   return "";
 }
 
-/** Can a coda n attach here? Not before another nasal (no *nn / *nm). */
 function codaAllowed(ph: string[], nIndex: number, syls: string[]): boolean {
   if (!syls.length || syls[syls.length - 1]!.endsWith("n")) return false;
   const next = ph[nIndex + 1];
@@ -275,7 +247,8 @@ export function tokiponize(
       nextActive.push({
         i: st.i + 1,
         syls: st.syls,
-        score: st.score + PEN.dropConsonant,
+        score: st.score +
+          (next === undefined ? PEN.finalDrop : PEN.dropConsonant),
       });
     }
 

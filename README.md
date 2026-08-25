@@ -6,7 +6,7 @@ alternatives. Usable as a library or from the command line!
 ```ts
 import { tokiponize, tokiponizeBest, isValidName, syllabify } from "tokiponize";
 
-tokiponizeBest("Lauren"); // "Lolen"
+tokiponizeBest("Lauren"); // "Lowen"
 tokiponizeBest("Sam");    // "San"
 
 tokiponize("Titan");
@@ -28,41 +28,49 @@ npm install tokiponize      # library
 ```sh
 tokiponize Lauren
 # Lauren:
-#   Lolen (-0.4)
+#   Lowen (0)
 #   ...
 
 tokiponize --best Titan Chris María
 # Titan -> Sitan
-# Chris -> Kilisi
-# María -> Malija
+# Chris -> Kiwisi
+# María -> Mawija
 
 tokiponize --json Sam
 # {"name":"Sam","candidates":[{"name":"San","score":-0.4}, ...]}
 
 tokiponize --check Koti
 # Koti: not valid toki pona
-
-printf 'Titan\nChris\n' | tokiponize -
 ```
 
 Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
 `--check`).
 
-## What it implements
+## How it works
 
-The full phonotactics of toki pona, per the
-[sona pona Phonotactics page](https://sona.pona.la/wiki/Phonotactics):
+Names are tokiponized in two steps:
 
-- (C)V(n) syllables
-- No wu, wo, ji, ti
-- No adjacent nasals: (`*anna -> ana`, `*anma -> ama`)
+1. Spelling is read into a phoneme (place, manner, voicing) per
+   the [Tokiponization page](https://sona.pona.la/wiki/Tokiponization).
+2. Phonemes get fit into toki pona's syllable scheme
+   per the [Phonotactics page](https://sona.pona.la/wiki/Phonotactics):
+   (C)V(n) syllables, forbidden `*wu`/`*wo`/`*ji`/`*ti`, no adjacent nasals. When a
+   name doesn't fit well, or has multiple possible alternatives (echo vowels, dropped sounds,
+   glides), they get scored and ranked instead of picking one answer for you.
+
+Input isn't limited to plain English spelling, either! Accented Latin (`ñ`, `ç`,
+`ø`, `ł`, ...), Cyrillic, Greek, Hangul, and Japanese kana are all supported!
 
 ## Limitations
 
-Tokiponization is partly aesthetic. The algorithm reads spelling, not
-pronunciation, so names whose spelling and sound diverge heavily (English is
-the usual offender) may need a human touch. That's why the API returns
-several candidates instead of a single verdict, so you can treat them as suggestions.
+Some letters and syllables are unfortunately ambiguous without knowing the source language.
+A big one is `r`: Latin spelling defaults to the English (`w`), while Cyrillic, Greek, Hangul, and kana default to a
+tap/trill (`l`), since those scripts are unambiguous about this case. A French or
+German uvular `r` (which would ideally be `k`) reads as `w` too, since
+there's no way to tell it apart from English by spelling alone. That's why
+`tokiponize` returns several ranked candidates instead of just one.
+
+If you find that this tool is not working as expected, please [open an issue](https://github.com/laurhinch/tokiponize/issues/new) or [submit a pull request](https://github.com/laurhinch/tokiponize/pulls).
 
 ## Development
 
