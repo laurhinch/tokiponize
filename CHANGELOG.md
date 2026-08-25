@@ -1,5 +1,11 @@
 # tokiponize
 
+## 1.1.0
+
+### Minor Changes
+
+- Add phoneme-based tokiponization and script support.
+
 ## 1.0.0
 
 ### Major Changes
