@@ -87,7 +87,7 @@ Every result has its own link, and pasting one into Discord (or anywhere
 else that reads OpenGraph tags) draws the name as a card:
 
 <p align="center">
-  <img src="site/embed-preview.png" alt="a tokiponize link unfurled in Discord, showing lauren becoming Lowen" width="496">
+  <img src="site/discord-embed.png" alt="a tokiponize link unfurled in Discord, showing lauren becoming Lowen" width="496">
 </p>
 
 Grab the link with the share button under any result, or build it yourself:
