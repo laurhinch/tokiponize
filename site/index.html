@@ -434,6 +434,15 @@
       return node;
     }
 
+    function copyOnClick(node, name) {
+      node.title = "copy";
+      node.addEventListener("click", () => {
+        navigator.clipboard?.writeText(name);
+        node.classList.add("copied");
+        setTimeout(() => node.classList.remove("copied"), 400);
+      });
+    }
+
     function render() {
       const raw = input.value.trim();
       output.replaceChildren();
@@ -454,6 +463,7 @@
 
       const [best, ...alts] = candidates;
       const bestBox = el("div", "best");
+      copyOnClick(bestBox, best.name);
       bestBox.append(el("div", "best-name", best.name));
       const syls = syllabify(best.name);
       if (syls) bestBox.append(el("div", "best-syls", syls.join(" · ")));
@@ -464,6 +474,7 @@
         row.style.marginTop = "0.75rem";
         for (const alt of alts) {
           const chip = el("span", "alt", alt.name);
+          copyOnClick(chip, alt.name);
           chip.append(" ", el("span", "score", String(alt.score)));
           row.append(chip);
         }
