@@ -1,9 +1,0 @@
-name = "tokiponize-api"
-main = "worker.mjs"
-compatibility_date = "2026-08-01"
-
-# with the site's DNS proxied through Cloudflare, this serves /api/* on the
-# same domain while everything else falls through to GitHub Pages
-# routes = [{ pattern = "nimi.toki.li/api/*", zone_name = "toki.li" }]
-
-workers_dev = true
