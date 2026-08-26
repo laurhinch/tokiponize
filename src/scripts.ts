@@ -125,15 +125,15 @@ function latinTokens(raw: string): string[] {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z]/g, "");
   if (!s) return [];
-  // collapse gemination (Anna, Emma), consonants only: a doubled vowel may
-  // be a digraph (oo, ee) the loop below still needs to see
   s = s.replace(/([^aeiou])\1+/g, "$1");
 
   const tokens: string[] = [];
   let i = 0;
   while (i < s.length) {
-    // ŋ only surfaces word-finally in English spelling (sing, not finger)
-    if (i + 2 === s.length && s.startsWith("ng", i)) {
+    if (
+      s.startsWith("ng", i) &&
+      (i + 2 === s.length || !/[aeiouy]/.test(s[i + 2]!))
+    ) {
       tokens.push("ng");
       i += 2;
       continue;
@@ -509,7 +509,160 @@ function kanaTokens(raw: string): string[] {
   return tokens;
 }
 
-type Script = "latin" | "cyrillic" | "greek" | "hangul" | "kana" | "other";
+// Devanagari (Hindi, Nepali, Marathi, Sanskrit)
+//
+// An abugida: each consonant carries an inherent "a" unless a dependent
+// vowel sign (matra) or a virama follows. Unicode stores matras in logical
+// order (after the consonant) even when rendered before it, so a single
+// left-to-right pass works.
+
+const DEVA_CONSONANT: Record<string, string> = {
+  "क": "k",
+  "ख": "k",
+  "ग": "g",
+  "घ": "g",
+  "ङ": "n",
+  "च": "ch",
+  "छ": "ch",
+  "ज": "ch",
+  "झ": "ch",
+  "ञ": "n",
+  "ट": "t",
+  "ठ": "t",
+  "ड": "d",
+  "ढ": "d",
+  "ण": "n",
+  "त": "t",
+  "थ": "t",
+  "द": "d",
+  "ध": "d",
+  "न": "n",
+  "प": "p",
+  "फ": "p",
+  "ब": "b",
+  "भ": "b",
+  "म": "m",
+  "य": "j",
+  "र": "r",
+  "ल": "l",
+  "ळ": "l",
+  "व": "w",
+  "श": "sh",
+  "ष": "sh",
+  "स": "s",
+  "ह": "h",
+  // precomposed nukta forms (Persian/English loan sounds)
+  "क़": "k",
+  "ख़": "k",
+  "ग़": "g",
+  "ज़": "z",
+  "ड़": "r",
+  "ढ़": "r",
+  "फ़": "f",
+  "य़": "j",
+};
+
+// retroflex flaps and loan fricatives the combining nukta creates
+const DEVA_NUKTA: Record<string, string> = {
+  "ड": "r",
+  "ढ": "r",
+  "ज": "z",
+  "फ": "f",
+  "क": "k",
+  "ख": "k",
+  "ग": "g",
+};
+
+const DEVA_VOWEL: Record<string, string[]> = {
+  "अ": ["a"],
+  "आ": ["a"],
+  "इ": ["i"],
+  "ई": ["i"],
+  "उ": ["u"],
+  "ऊ": ["u"],
+  "ऋ": ["r", "i"],
+  "ॠ": ["r", "i"],
+  "ऌ": ["l", "i"],
+  "ऍ": ["e"],
+  "ऎ": ["e"],
+  "ए": ["e"],
+  "ऐ": ["a", "i"],
+  "ऑ": ["o"],
+  "ऒ": ["o"],
+  "ओ": ["o"],
+  "औ": ["a", "u"],
+};
+
+const DEVA_MATRA: Record<string, string[]> = {
+  "ा": ["a"],
+  "ि": ["i"],
+  "ी": ["i"],
+  "ु": ["u"],
+  "ू": ["u"],
+  "ृ": ["r", "i"],
+  "ॄ": ["r", "i"],
+  "ॅ": ["e"],
+  "ॆ": ["e"],
+  "े": ["e"],
+  "ै": ["a", "i"],
+  "ॉ": ["o"],
+  "ॊ": ["o"],
+  "ो": ["o"],
+  "ौ": ["a", "u"],
+};
+
+function devanagariTokens(raw: string): string[] {
+  const chars = Array.from(raw);
+  const tokens: string[] = [];
+  // consonant read but its inherent "a" not yet decided
+  let pendingA = false;
+  const flush = () => {
+    if (pendingA) tokens.push("a");
+    pendingA = false;
+  };
+  let i = 0;
+  while (i < chars.length) {
+    const ch = chars[i]!;
+    let cons = DEVA_CONSONANT[ch];
+    if (cons !== undefined) {
+      flush();
+      if (chars[i + 1] === "़") {
+        cons = DEVA_NUKTA[ch] ?? cons;
+        i += 1;
+      }
+      tokens.push(cons);
+      pendingA = true;
+    } else if (DEVA_MATRA[ch]) {
+      tokens.push(...DEVA_MATRA[ch]!);
+      pendingA = false;
+    } else if (ch === "्") {
+      // virama: bare consonant, no inherent vowel
+      pendingA = false;
+    } else if (DEVA_VOWEL[ch]) {
+      flush();
+      tokens.push(...DEVA_VOWEL[ch]!);
+    } else if (ch === "ं" || ch === "ँ") {
+      // anusvara/candrabindu nasalize; a plain n is the closest fit
+      flush();
+      tokens.push("n");
+    } else {
+      // visarga, digits, danda: not segmental, skip
+      flush();
+    }
+    i += 1;
+  }
+  flush();
+  return tokens;
+}
+
+type Script =
+  | "latin"
+  | "cyrillic"
+  | "greek"
+  | "hangul"
+  | "kana"
+  | "devanagari"
+  | "other";
 
 function classify(cp: number): Script {
   if (
@@ -524,6 +677,7 @@ function classify(cp: number): Script {
     return "hangul";
   }
   if (cp >= 0x3040 && cp <= 0x30ff) return "kana";
+  if (cp >= 0x900 && cp <= 0x97f) return "devanagari";
   return "other";
 }
 
@@ -552,6 +706,9 @@ export function textToTokens(raw: string): string[] {
         break;
       case "kana":
         tokens.push(...kanaTokens(run));
+        break;
+      case "devanagari":
+        tokens.push(...devanagariTokens(run));
         break;
       case "other":
         break;

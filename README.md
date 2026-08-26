@@ -59,7 +59,8 @@ Names are tokiponized in two steps:
    glides), they get scored and ranked instead of picking one answer for you.
 
 Input isn't limited to plain English spelling, either! Accented Latin (`ñ`, `ç`,
-`ø`, `ł`, ...), Cyrillic, Greek, Hangul, and Japanese kana are all supported!
+`ø`, `ł`, ...), Cyrillic, Greek, Hangul, Japanese kana, and Devanagari are all
+supported!
 
 ## Limitations
 

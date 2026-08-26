@@ -118,14 +118,21 @@ interface State {
 
 const BEAM_WIDTH = 40;
 
-const PEN = {
-  dropConsonant: -2.5,
+// exported so eval tooling can adjust weights at runtime
+export const PEN = {
+  dropConsonant: -1.9,
+  dropCodaLiquid: -1.2,
   // drop the word's last consonant cheaper than a mid-cluster one
   finalDrop: -0.75,
   dropVowel: -1.75,
+  // second vowel of hiatus (Suomi -> Sumi)
+  hiatusDrop: -1.5,
+  initialVowelDrop: -1.75,
+  // word-final nasal+vowel to coda n (Pechino -> Pesin)
+  finalNasalClip: -1.1,
   // keeping a probably-silent English final e pronounced
   pronouncedFinalE: -0.5,
-  epenthesis: -1,
+  epenthesis: -1.8,
   glideNatural: -0.4,
   glideOther: -1.25,
   finalSToSyllable: -0.5,
@@ -172,6 +179,12 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
       if (VOWELS.has(ch)) {
         if (wordInitial) {
           nextActive.push({ i: st.i + 1, syls: [ch], score: st.score });
+          // America -> Mewika
+          nextActive.push({
+            i: st.i + 1,
+            syls: [],
+            score: st.score + PEN.initialVowelDrop,
+          });
         } else {
           const prevV = lastVowelOf(st.syls);
           // insertion of glide keeps the vowel legal ex: Malia -> Malija.
@@ -191,7 +204,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
           nextActive.push({
             i: st.i + 1,
             syls: st.syls,
-            score: st.score + PEN.dropVowel,
+            score: st.score + PEN.hiatusDrop,
           });
         }
         continue;
@@ -199,8 +212,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
 
       const next = ph[st.i + 1];
       if (next !== undefined && VOWELS.has(next)) {
-        // a word-final nasal+vowel can instead close the previous syllable
-        // with a coda n (Telephone -> Telepon alongside Telepone)
+        // Telephone -> Telepon alongside Telepone
         if (
           (ch === "n" || ch === "m") &&
           st.i + 2 === ph.length &&
@@ -210,7 +222,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
           nextActive.push({
             i: st.i + 2,
             syls: [...st.syls.slice(0, -1), st.syls[st.syls.length - 1] + "n"],
-            score: st.score + PEN.dropVowel +
+            score: st.score + PEN.finalNasalClip +
               (ch === "m" ? PEN.finalMToN : 0),
           });
         }
@@ -260,11 +272,19 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
               : PEN.epenthesis),
         });
       }
+      // post-vocalic liquids vocalize away like non-rhotic coda r (Malta -> Mata)
+      const codaLiquid = (ch === "l" || ch === "w") &&
+        st.i > 0 &&
+        VOWELS.has(ph[st.i - 1]!);
       nextActive.push({
         i: st.i + 1,
         syls: st.syls,
         score: st.score +
-          (next === undefined ? PEN.finalDrop : PEN.dropConsonant),
+          (next === undefined
+            ? PEN.finalDrop
+            : codaLiquid
+            ? PEN.dropCodaLiquid
+            : PEN.dropConsonant),
       });
     }
 

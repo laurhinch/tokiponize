@@ -312,6 +312,16 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(tokiponizeBest("이서연"), "Isojon"); // I Seo-yeon
   });
 
+  test("Devanagari consonants carry an inherent a unless a matra or virama follows", () => {
+    // भारत (Bhārat): the Wikidata-attested tokiponization of India is ma Palata
+    assert.equal(tokiponizeBest("भारत"), "Palata");
+    assert.equal(toPhonemes("नेपाल"), "nepala"); // Nepāl
+    // हिन्दी (Hindī): the virama on न kills its inherent a
+    assert.equal(toPhonemes("हिन्दी"), "inti");
+    // मुंबई (Mumbaī): anusvara nasalizes, independent vowel restores the a
+    assert.equal(toPhonemes("मुंबई"), "munpai");
+  });
+
   test("kana map cleanly since each character is already one CV syllable", () => {
     assert.equal(tokiponizeBest("さくら"), "Sakula"); // hiragana: Sakura
     assert.equal(tokiponizeBest("アリス"), "Alisu"); // katakana: Alice
