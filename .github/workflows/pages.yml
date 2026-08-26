@@ -35,6 +35,7 @@ jobs:
         run: |
           mkdir -p _site/lib
           cp site/index.html _site/
+          cp site/*.png _site/ 2>/dev/null || true
           cp dist/index.js dist/scripts.js dist/experimental.js dist/model.js _site/lib/
 
       - uses: actions/configure-pages@v5

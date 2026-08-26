@@ -11,9 +11,13 @@
     <meta property="og:title" content="tokiponize" />
     <meta property="og:description"
         content="Turn any name into phonotactically valid toki pona, with scored alternatives." />
-    <meta property="og:url" content="https://laurhinch.github.io/tokiponize/" />
+    <meta property="og:url" content="https://nimi.toki.li/" />
+    <meta property="og:image" content="https://nimi.toki.li/card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="canonical" href="https://nimi.toki.li/" />
     <meta name="theme-color" content="#f4ecdd" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -163,6 +167,36 @@
             overflow-wrap: anywhere;
         }
 
+        .copy-btn {
+            margin-top: 0.6rem;
+            padding: 0.3rem 0.8rem;
+            font: 700 0.8rem var(--font-display);
+            color: var(--neo-black);
+            background: var(--neo-white);
+            border: 2px solid var(--neo-black);
+            border-radius: 999px;
+            box-shadow: 2px 2px 0 var(--neo-black);
+            cursor: pointer;
+            transition: transform 0.15s var(--ease-spring), background 0.15s;
+        }
+
+        .copy-btn:hover {
+            transform: translate(-1px, -1px);
+            background: var(--neo-yellow);
+        }
+
+        .copy-btn:active {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+
+        .best-syls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0 0.8rem;
+        }
+
         .best-syls {
             color: var(--text-secondary);
             font-size: 0.85rem;
@@ -206,10 +240,6 @@
         .alt:hover {
             transform: translateY(-2px);
             background: var(--neo-yellow);
-        }
-
-        .best {
-            cursor: pointer;
         }
 
         .copied {
@@ -486,6 +516,9 @@
                 noResult: "ike a! nothing pronounceable came out of that.",
                 engineStd: "standard",
                 engineExp: "experimental",
+                copyLabel: "copy",
+                copyTitle: "copy this tokiponization",
+                copiedLabel: "copied!",
                 statsHead: "ilo li pona ala pona? · how good is it?",
                 statsIntro: "Tested on ~4,900 real tokiponizations from " +
                     "<a href='https://www.wikidata.org/'>Wikidata</a>'s toki pona " +
@@ -507,6 +540,9 @@
                 noResult: "ike a! mi ken ala pali e nimi pona tan ni.",
                 engineStd: "pona",
                 engineExp: "sin",
+                copyLabel: "o kama jo",
+                copyTitle: "o kama jo e nimi ni",
+                copiedLabel: "pona a!",
                 statsHead: "ilo li pona ala pona?",
                 statsIntro: "mi lukin e nimi 4900 tan lipu " +
                     "<a href='https://www.wikidata.org/'>Wikitata</a>. kulupu pi " +
@@ -584,10 +620,26 @@
 
             const [best, ...alts] = candidates;
             const bestBox = el("div", "best");
-            copyOnClick(bestBox, best.name);
             bestBox.append(el("div", "best-name", best.name));
-            const syls = syllabify(best.name);
-            if (syls) bestBox.append(el("div", "best-syls", syls.join(" · ")));
+
+            // syllables per word, so multi-word names stay readable
+            const sylRow = el("div", "best-syls");
+            for (const word of best.name.split(" ")) {
+                const syls = syllabify(word);
+                if (syls) sylRow.append(el("span", null, syls.join(" · ")));
+            }
+            if (sylRow.childElementCount) bestBox.append(sylRow);
+
+            const copy = el("button", "copy-btn", t("copyLabel"));
+            copy.type = "button";
+            copy.title = t("copyTitle");
+            copy.setAttribute("aria-label", t("copyTitle"));
+            copy.addEventListener("click", () => {
+                navigator.clipboard?.writeText(best.name);
+                copy.textContent = t("copiedLabel");
+                setTimeout(() => { copy.textContent = t("copyLabel"); }, 1200);
+            });
+            bestBox.append(copy);
             output.append(bestBox);
 
             if (alts.length) {
