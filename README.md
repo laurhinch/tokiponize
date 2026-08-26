@@ -56,7 +56,7 @@ Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
 
 ## Free API
 
-No key, no signup. Anything that can fetch a URL gets the same candidates
+No key or signup required! This is a free HTTP API that returns the same candidates
 the library returns:
 
 ```sh
@@ -80,10 +80,6 @@ curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
 | `name` | the name to convert, spaces and all (required) |
 | `limit` | how many candidates, 1 to 8 (default 4) |
 | `experimental` | `1` to mix in the learned suggestions |
-
-Quote the URL in a shell, or `&` gets read as "run in the background". You
-get 120 requests a minute per IP, and a `429` past that. CORS is open and
-responses cache for an hour, so calling it from a browser works too.
 
 ## How it works
 

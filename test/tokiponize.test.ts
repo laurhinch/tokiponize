@@ -307,6 +307,23 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(toPhonemes("Χριστόφορος"), "klistopolos");
   });
 
+  test("Greek digraphs are one sound, not two letters", () => {
+    assert.equal(toPhonemes("ου"), "u"); // not o + i
+    assert.equal(toPhonemes("αι"), "e");
+    // γ before ι plus a vowel is a glide: για is ja, not kia
+    assert.equal(toPhonemes("για"), "ja");
+    assert.equal(tokiponizeBest("Γιάννης"), "Janisi");
+    assert.equal(toPhonemes("Λουκάς"), "lukas");
+    // μπ and ντ write b and d, which collapse to p and t
+    assert.equal(toPhonemes("Μπάμπης"), "pampis");
+    assert.equal(toPhonemes("Ντίνα"), "tina");
+    // αυ takes an f before a voiceless sound, a v otherwise
+    assert.equal(toPhonemes("αυτό"), "apto");
+    assert.equal(toPhonemes("Εύα"), "ewa");
+    // a diaeresis says the two vowels are separate
+    assert.equal(toPhonemes("Αϊβαλί"), "aiwali");
+  });
+
   test("Hangul syllables decompose algorithmically into lead/vowel/trailing jamo", () => {
     assert.equal(tokiponizeBest("김민준"), "Kiminsun"); // Kim Min-jun
     assert.equal(tokiponizeBest("이서연"), "Isojon"); // I Seo-yeon

@@ -277,12 +277,103 @@ const GREEK_TOKENS: Record<string, string[]> = {
   ώ: ["o"],
 };
 
+const GREEK_VOWELS = new Set(["α", "ε", "η", "ι", "ο", "υ", "ω"]);
+/** γ is a soft j before these, not a k */
+const GREEK_FRONT = new Set(["ε", "η", "ι", "υ"]);
+const GREEK_VOICELESS = new Set(["θ", "κ", "ξ", "π", "σ", "ς", "τ", "φ", "χ", "ψ"]);
+const DIAERESIS = "̈";
+
+const GREEK_DIGRAPHS: Array<[string, string[]]> = [
+  ["ου", ["u"]],
+  ["αι", ["e"]],
+  ["ει", ["i"]],
+  ["οι", ["i"]],
+  ["υι", ["i"]],
+  ["τσ", ["s"]],
+  ["τζ", ["z"]],
+];
+
 function greekTokens(raw: string): string[] {
   const tokens: string[] = [];
-  // polytonic marks decompose under NFD like Latin accents, so stripping
-  // them reuses the modern table instead of needing a second one
-  const plain = raw.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  for (const ch of plain) tokens.push(...(GREEK_TOKENS[ch] ?? []));
+  // drop the stress marks but keep the diaeresis: it is what tells two
+  // vowels apart from a digraph (Μαϊ is ma-i, not me)
+  const s = raw.toLowerCase().normalize("NFD").replace(/[̀-̇̉-ͯ]/g, "");
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i]!;
+    if (ch === DIAERESIS) {
+      i += 1;
+      continue;
+    }
+    const next = s[i + 1];
+    const after = s[i + 2];
+
+    if (ch === "γ") {
+      // γι and γυ before a vowel are one glide: για is ja, not kia
+      if ((next === "ι" || next === "υ") && after && GREEK_VOWELS.has(after)) {
+        tokens.push("j");
+        i += 2;
+        continue;
+      }
+      if (next === "ε" && after === "ι" && GREEK_VOWELS.has(s[i + 3] ?? "")) {
+        tokens.push("j");
+        i += 3;
+        continue;
+      }
+      if (next === "κ") {
+        tokens.push(...(tokens.length ? ["n", "g"] : ["g"]));
+        i += 2;
+        continue;
+      }
+      // γγ is a nasal plus whatever the second γ turns into
+      if (next === "γ") {
+        tokens.push("n");
+        i += 1;
+        continue;
+      }
+      if (next && GREEK_FRONT.has(next)) {
+        tokens.push("j");
+        i += 1;
+        continue;
+      }
+      tokens.push("g");
+      i += 1;
+      continue;
+    }
+
+    // αυ and ευ end in v or f depending on what follows
+    if ((ch === "α" || ch === "ε" || ch === "η") && next === "υ" &&
+      after !== DIAERESIS) {
+      const voiceless = after === undefined || GREEK_VOICELESS.has(after);
+      tokens.push(ch === "η" ? "i" : ch === "α" ? "a" : "e", voiceless ? "f" : "v");
+      i += 2;
+      continue;
+    }
+
+    // μπ and ντ are how Greek writes b and d
+    if (ch === "μ" && next === "π") {
+      tokens.push(...(tokens.length ? ["m", "b"] : ["b"]));
+      i += 2;
+      continue;
+    }
+    if (ch === "ν" && next === "τ") {
+      tokens.push(...(tokens.length ? ["n", "d"] : ["d"]));
+      i += 2;
+      continue;
+    }
+
+    const digraph = GREEK_DIGRAPHS.find(([pat]) =>
+      s.startsWith(pat, i) && s[i + pat.length] !== DIAERESIS
+    );
+    if (digraph) {
+      tokens.push(...digraph[1]);
+      i += digraph[0].length;
+      continue;
+    }
+
+    tokens.push(...(GREEK_TOKENS[ch] ?? []));
+    i += 1;
+  }
   return tokens;
 }
 
