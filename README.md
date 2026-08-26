@@ -44,7 +44,7 @@ tokiponize --check Koti
 ```
 
 Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
-`--check`).
+`--check`, `--experimental`).
 
 ## How it works
 
@@ -62,32 +62,32 @@ Input isn't limited to plain English spelling, either! Accented Latin (`ñ`, `ç
 `ø`, `ł`, ...), Cyrillic, Greek, Hangul, Japanese kana, and Devanagari are all
 supported!
 
-## Experimental learned model
+## Experimental mode
 
-`--experimental` (or `tokiponize(name, { experimental: true })`) blends in a
-small transliteration model trained on attested community tokiponizations.
-The rule engine still picks the top candidate; the model fills the rest of
-the list with forms the rules never generate (Suomi -> `Sumi`, English ->
-`Enli`). Expect its behavior to change between releases.
+`--experimental` (or `tokiponize(name, { experimental: true })`) adds
+suggestions from a small model trained on tokiponizations the community
+actually uses. The rules still pick the top candidate; the model fills the
+rest of the list with forms the rules never produce (Suomi -> `Sumi`,
+English -> `Enli`). It may change between releases.
 
 ## Accuracy
 
-Measured against tokiponizations the community actually uses: the
+Tested against ~4,900 real tokiponizations, taken from the
 [toki pona labels on Wikidata](https://www.wikidata.org/) (language code
-`tok`, CC0), ~4.8k entities harvested with the scripts in [`eval/`](eval/)
-and kept in [`eval/data/wikidata-tok.jsonl`](eval/data/wikidata-tok.jsonl).
-A name counts as matched when the attested form appears from *any* of the
-entity's source-language labels. Held-out entities only, never trained or
-tuned on:
+`tok`, CC0) and kept in
+[`eval/data/wikidata-tok.jsonl`](eval/data/wikidata-tok.jsonl). A name
+counts as matched if any of that entity's source-language names produces
+the community's form. Only names the tool was never tuned on:
 
-| engine | top-1 | top-4 | top-8 | not generated |
-|--------|-------|-------|-------|---------------|
+| engine | top-1 | top-4 | top-8 | missed entirely |
+|--------|-------|-------|-------|-----------------|
 | rules (default) | 40.8% | 50.6% | 51.8% | 48.2% |
 | `--experimental` | 40.8% | 54.5% | 57.4% | 42.6% |
 
-The gap to 100% is mostly names derived from endonyms or pronunciations no
-written label provides (Japan -> `Nijon` needs "Nihon"): give it the source
-the community used and it does far better than the table suggests.
+Most misses are names the community based on what a place calls itself
+(Japan -> `Nijon` comes from "Nihon"), which the written source doesn't
+show. Start from the name the community used and it does much better. The
+scripts behind these numbers live in [`eval/`](eval/).
 
 ## Limitations
 

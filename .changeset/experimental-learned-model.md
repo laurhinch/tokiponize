@@ -2,4 +2,4 @@
 "tokiponize": minor
 ---
 
-Experimental learned transliteration model (`--experimental` / `{ experimental: true }`), trained on attested Wikidata tokiponizations. The rule engine keeps the top candidate; the model fills the list with forms the rules never generate.
+New `--experimental` flag (`{ experimental: true }` in the library): adds suggestions from a small model trained on real community tokiponizations. The rules keep the top pick.

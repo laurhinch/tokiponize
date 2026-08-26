@@ -133,9 +133,9 @@ export const PEN = {
   initialVowelDrop: -1.75,
   // word-final nasal+vowel to coda n (Pechino -> Pesin)
   finalNasalClip: -1.1,
-  // Latin r read as a tap (Peru -> Pelu), community often prefers it
+  // Latin r read as a tap (Peru -> Pelu)
   latinRAsL: -0.3,
-  // community habit of ending names in a (Kanado -> Kanata)
+  // swapping the final vowel for a (Kanado -> Kanata)
   finalAShift: -0.55,
   // keeping a probably-silent English final e pronounced
   pronouncedFinalE: -0.5,
@@ -279,7 +279,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
               : PEN.epenthesis),
         });
       }
-      // post-vocalic liquids vocalize away like non-rhotic coda r (Malta -> Mata)
+      // a liquid after a vowel drops cheaply, like non-rhotic r (Malta -> Mata)
       const codaLiquid = (ch === "l" || ch === "w") &&
         st.i > 0 &&
         VOWELS.has(ph[st.i - 1]!);
@@ -319,7 +319,7 @@ export function tokiponize(
       ]
       : [{ ph: phStr, bias: 0 }];
 
-  // ambiguous Latin r also beams as a tap (Peru -> Pelu)
+  // try Latin r as a tap too (Peru -> Pelu)
   if (tokens.includes("rw")) {
     const lStr = tokensToPhonemes(tokens.map((t) => (t === "rw" ? "l" : t)));
     for (const v of [...variants]) {
@@ -344,7 +344,7 @@ export function tokiponize(
     if (prev === undefined || score > prev) seen.set(cased, score);
   }
 
-  // community habit: names like ending in a (Kanado -> Kanata)
+  // the community likes names ending in a (Kanado -> Kanata)
   for (const [name, score] of [...seen.entries()]) {
     const last = name[name.length - 1]!;
     if (!"eiou".includes(last)) continue;
@@ -361,8 +361,7 @@ export function tokiponize(
     .slice(0, limit);
   if (!options.experimental) return ruled;
 
-  // interleave with the learned model: rules keep the top spot, the model
-  // fills in forms the beam never generates
+  // mix in model suggestions; rules keep the top spot
   const learned = decode(phStr, limit * 2)
     .filter((c) => isValidName(c.name))
     .map((c) => ({

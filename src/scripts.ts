@@ -527,10 +527,9 @@ function kanaTokens(raw: string): string[] {
 
 // Devanagari (Hindi, Nepali, Marathi, Sanskrit)
 //
-// An abugida: each consonant carries an inherent "a" unless a dependent
-// vowel sign (matra) or a virama follows. Unicode stores matras in logical
-// order (after the consonant) even when rendered before it, so a single
-// left-to-right pass works.
+// Each consonant carries an inherent "a" unless a vowel sign (matra) or
+// virama follows. Unicode stores matras after the consonant even when
+// drawn before it, so one left-to-right pass works.
 
 const DEVA_CONSONANT: Record<string, string> = {
   "क": "k",
@@ -578,7 +577,7 @@ const DEVA_CONSONANT: Record<string, string> = {
   "य़": "j",
 };
 
-// retroflex flaps and loan fricatives the combining nukta creates
+// what the combining nukta turns these into
 const DEVA_NUKTA: Record<string, string> = {
   "ड": "r",
   "ढ": "r",
@@ -658,7 +657,7 @@ function devanagariTokens(raw: string): string[] {
       flush();
       tokens.push(...DEVA_VOWEL[ch]!);
     } else if (ch === "ं" || ch === "ँ") {
-      // anusvara/candrabindu nasalize; a plain n is the closest fit
+      // anusvara nasalizes; n is the closest fit
       flush();
       tokens.push("n");
     } else {

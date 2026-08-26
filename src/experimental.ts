@@ -1,6 +1,5 @@
-// Experimental learned transliteration: beam-decode the phoneme string
-// through substring rewrite costs trained on attested Wikidata
-// tokiponizations (eval/train-model.mjs).
+// Decode the phoneme string with rewrite costs learned from community
+// tokiponizations. eval/train-model.mjs builds the model.
 
 import { MODEL } from "./model.js";
 

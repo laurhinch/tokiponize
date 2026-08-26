@@ -1,7 +1,5 @@
-// Train the experimental transliteration model: learn substring rewrite
-// costs (phoneme string -> attested toki pona) by iterated alignment over
-// the Wikidata corpus, then emit src/model.ts. Trains on the same Q-id
-// split tune.mjs uses so the holdout stays honest.
+// Learn rewrite costs from the Wikidata pairs and emit src/model.ts.
+// Uses the same train/holdout split as tune.mjs.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -15,8 +13,8 @@ const rows = readFileSync(join(here, "data", "wikidata-tok.jsonl"), "utf8")
   .filter(Boolean)
   .map((l) => JSON.parse(l));
 
-// each attested word pairs with the closest source word in phoneme space;
-// far pairs are endonym mismatches and would poison the counts
+// pair each toki pona word with the closest source word; far pairs are
+// endonym mismatches and would poison the counts
 const pairs = new Map();
 for (const row of rows) {
   if (Number(row.id.slice(1)) % 10 >= 6) continue;

@@ -2,4 +2,4 @@
 "tokiponize": minor
 ---
 
-Devanagari script support (भारत -> Palata), plus corpus-tuned penalties validated against 8.5k attested Wikidata tokiponizations: deletion now outranks epenthesis (España -> Epanja), post-vocalic liquids vocalize away cheaply (Malta -> Mata), preconsonantal ng reads as one nasal (English -> Enli-), and word-initial vowels can drop (America -> Mewika as an alternative).
+Devanagari support (भारत -> Palata), plus retuned penalties checked against thousands of real tokiponizations: dropping sounds now beats inserting vowels (España -> Epanja), l and r after a vowel can drop (Malta -> Mata), ng before a consonant reads as one nasal, and a name can shed its first vowel (America -> Mewika as an alternative).
