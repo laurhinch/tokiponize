@@ -62,6 +62,33 @@ Input isn't limited to plain English spelling, either! Accented Latin (`ñ`, `ç
 `ø`, `ł`, ...), Cyrillic, Greek, Hangul, Japanese kana, and Devanagari are all
 supported!
 
+## Experimental learned model
+
+`--experimental` (or `tokiponize(name, { experimental: true })`) blends in a
+small transliteration model trained on attested community tokiponizations.
+The rule engine still picks the top candidate; the model fills the rest of
+the list with forms the rules never generate (Suomi -> `Sumi`, English ->
+`Enli`). Expect its behavior to change between releases.
+
+## Accuracy
+
+Measured against tokiponizations the community actually uses: the
+[toki pona labels on Wikidata](https://www.wikidata.org/) (language code
+`tok`, CC0), ~4.8k entities harvested with the scripts in [`eval/`](eval/)
+and kept in [`eval/data/wikidata-tok.jsonl`](eval/data/wikidata-tok.jsonl).
+A name counts as matched when the attested form appears from *any* of the
+entity's source-language labels. Held-out entities only, never trained or
+tuned on:
+
+| engine | top-1 | top-4 | top-8 | not generated |
+|--------|-------|-------|-------|---------------|
+| rules (default) | 37.9% | 44.2% | 44.6% | 55.4% |
+| `--experimental` | 37.9% | 49.3% | 52.6% | 47.4% |
+
+The gap to 100% is mostly names derived from endonyms or pronunciations no
+written label provides (Japan -> `Nijon` needs "Nihon"): give it the source
+the community used and it does far better than the table suggests.
+
 ## Limitations
 
 Some letters and syllables are unfortunately ambiguous without knowing the source language.

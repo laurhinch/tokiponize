@@ -312,6 +312,15 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(tokiponizeBest("이서연"), "Isojon"); // I Seo-yeon
   });
 
+  test("experimental model keeps the rule engine's top pick and only adds valid names", () => {
+    for (const name of ["Lauren", "Suomi", "María"]) {
+      const ruled = tokiponize(name)[0]!.name;
+      const mixed = tokiponize(name, { experimental: true });
+      assert.equal(mixed[0]!.name, ruled);
+      for (const c of mixed) assert.ok(isValidName(c.name), c.name);
+    }
+  });
+
   test("Devanagari consonants carry an inherent a unless a matra or virama follows", () => {
     // भारत (Bhārat): the Wikidata-attested tokiponization of India is ma Palata
     assert.equal(tokiponizeBest("भारत"), "Palata");

@@ -35,17 +35,24 @@ export function levenshtein(a, b) {
 }
 
 let rankCache = new Map();
+let evalOpts = {};
 
 // call whenever penalty weights change
 export function resetCache() {
   rankCache = new Map();
 }
 
+// extra tokiponize options for every rank() call, e.g. {experimental: true}
+export function setEvalOpts(opts) {
+  evalOpts = opts;
+  resetCache();
+}
+
 // rank of the attested form among our candidates, -1 if absent
 export function rank(source, attested) {
   const key = `${source} ${attested}`;
   if (rankCache.has(key)) return rankCache.get(key);
-  const cands = tokiponize(source, { limit: LIMIT });
+  const cands = tokiponize(source, { limit: LIMIT, ...evalOpts });
   const target = attested.toLowerCase();
   const r = cands.findIndex((c) => c.name.toLowerCase() === target);
   const out = { r, best: cands[0]?.name ?? "" };

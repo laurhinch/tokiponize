@@ -31,6 +31,18 @@ scorable, so rates below aren't directly comparable to the table above.
 | kana aliases harvested (にほん -> Nijon now explainable) | 4900 | .371 | .436 | .560 |
 | clean.mjs: dataset pruned to 4,805 clean entities, unreadable labels dropped | 4774 | .381 | .447 | .549 |
 
+## Learned model (holdout only, Q-id % 10 >= 6, never trained on)
+
+train-model.mjs learns substring rewrite costs from 2,918 aligned pairs
+(train split only), decode in src/experimental.ts, opt-in via
+`--experimental`. Hybrid interleaves rule and model candidates.
+
+| engine | top1 | top4 | top8 | unreachable |
+|--------|------|------|------|-------------|
+| rules | .379 | .442 | .446 | .554 |
+| model only | .364 | .476 | | .486 |
+| hybrid (shipped) | .379 | .493 | .526 | .474 |
+
 ## Conclusions
 
 - Baseline -> final: top1 .271 -> .328, dist .307 -> .275, all 45 tests green.

@@ -1,6 +1,7 @@
 // Converts names into toki pona phonotactics (rules: sona.pona.la/wiki/Phonotactics)
 // and phonemes (rules: sona.pona.la/wiki/Tokiponization)
 
+import { decode } from "./experimental.js";
 import { textToTokens } from "./scripts.js";
 
 export interface Candidate {
@@ -10,6 +11,8 @@ export interface Candidate {
 
 export interface TokiponizeOptions {
   limit?: number;
+  /** use the learned transliteration model instead of the rule engine */
+  experimental?: boolean;
 }
 
 const CONSONANTS = new Set(["p", "t", "k", "s", "m", "n", "l", "j", "w"]);
@@ -328,10 +331,31 @@ export function tokiponize(
     if (prev === undefined || score > prev) seen.set(cased, score);
   }
 
-  return [...seen.entries()]
+  const ruled = [...seen.entries()]
     .map(([name, score]) => ({ name, score: Math.round(score * 100) / 100 }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+  if (!options.experimental) return ruled;
+
+  // interleave with the learned model: rules keep the top spot, the model
+  // fills in forms the beam never generates
+  const learned = decode(phStr, limit * 2)
+    .filter((c) => isValidName(c.name))
+    .map((c) => ({
+      name: c.name[0]!.toUpperCase() + c.name.slice(1),
+      score: c.score,
+    }));
+  const merged: Candidate[] = [];
+  const have = new Set<string>();
+  for (let k = 0; k < Math.max(ruled.length, learned.length); k++) {
+    for (const c of [ruled[k], learned[k]]) {
+      if (c && !have.has(c.name)) {
+        have.add(c.name);
+        merged.push(c);
+      }
+    }
+  }
+  return merged.slice(0, limit);
 }
 
 /** best single suggestion, or empty string. */

@@ -14,6 +14,7 @@ Options:
   -b, --best         print only the best candidate for each name
   -j, --json         print machine-readable JSON instead of text
   -c, --check        report whether the input is already a valid toki pona name
+  -x, --experimental use the learned model trained on attested tokiponizations
   -h, --help         show this help
 
 Examples:
@@ -29,6 +30,7 @@ interface Args {
   best: boolean;
   json: boolean;
   check: boolean;
+  experimental: boolean;
   help: boolean;
   stdin: boolean;
 }
@@ -40,6 +42,7 @@ function parseArgs(argv: string[]): Args {
     best: false,
     json: false,
     check: false,
+    experimental: false,
     help: false,
     stdin: false,
   };
@@ -61,6 +64,10 @@ function parseArgs(argv: string[]): Args {
       case "-c":
       case "--check":
         args.check = true;
+        break;
+      case "-x":
+      case "--experimental":
+        args.experimental = true;
         break;
       case "-n":
       case "--limit": {
@@ -115,8 +122,9 @@ function printCandidates(
   limit: number,
   best: boolean,
   json: boolean,
+  experimental: boolean,
 ): void {
-  const candidates = tokiponize(name, { limit: best ? 1 : limit });
+  const candidates = tokiponize(name, { limit: best ? 1 : limit, experimental });
   if (json) {
     console.log(JSON.stringify({ name, candidates }));
     return;
@@ -158,7 +166,7 @@ async function main(): Promise<number> {
 
   for (const name of names) {
     if (args.check) printCheck(name, args.json);
-    else printCandidates(name, args.limit, args.best, args.json);
+    else printCandidates(name, args.limit, args.best, args.json, args.experimental);
   }
   return 0;
 }
