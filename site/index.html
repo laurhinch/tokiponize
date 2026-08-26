@@ -42,6 +42,8 @@
       flex-direction: column;
       align-items: center;
       background: var(--neo-cream);
+      background-image: radial-gradient(rgba(51, 46, 38, 0.08) 1px, transparent 1px);
+      background-size: 22px 22px;
       color: var(--neo-black);
       font-family: var(--font-body);
       font-weight: 600;
@@ -159,7 +161,22 @@
       border-radius: 999px;
       font-family: var(--font-display);
       font-weight: 700;
-      animation: pop-in 0.35s var(--ease-spring);
+      cursor: pointer;
+      animation: pop-in 0.35s var(--ease-spring) backwards;
+      transition: transform 0.15s var(--ease-spring), background 0.15s;
+    }
+
+    .alt:nth-child(2) { animation-delay: 0.05s; }
+    .alt:nth-child(3) { animation-delay: 0.1s; }
+    .alt:nth-child(4) { animation-delay: 0.15s; }
+
+    .alt:hover { transform: translateY(-2px); background: var(--neo-yellow); }
+
+    .best { cursor: pointer; }
+
+    .copied {
+      background: var(--neo-yellow) !important;
+      transition: background 0.1s;
     }
 
     .alt .score {
@@ -237,7 +254,12 @@
       border-radius: var(--radius-ui);
       padding: 0.3rem 0.5rem;
       cursor: pointer;
+      box-shadow: 2px 2px 0 var(--neo-black);
+      transition: transform 0.15s var(--ease-spring);
     }
+
+    select:hover { transform: translate(-1px, -1px); }
+    select:focus { outline: 3px solid var(--neo-red); }
 
     .top-row {
       display: flex;
@@ -250,6 +272,8 @@
       font-family: var(--font-display);
       font-size: 1.15rem;
       margin: 0 0 0.5rem;
+      align-self: flex-start;
+      background: linear-gradient(transparent 62%, var(--neo-teal) 62%);
     }
 
     .card p { margin: 0.35rem 0; font-size: 0.9rem; color: var(--text-secondary); }
@@ -269,6 +293,7 @@
 
     .stats-table th { background: var(--neo-yellow); }
     .stats-table td:first-child, .stats-table th:first-child { text-align: left; }
+    .stats-table tr:last-child td { background: #d7efe8; }
 
   </style>
 </head>
@@ -372,16 +397,16 @@
         engineStd: "pona",
         engineExp: "sin",
         statsHead: "ilo li pona ala pona?",
-        statsIntro: "lipu <a href='https://www.wikidata.org/'>Wikidata</a> " +
-          "li jo e nimi mute pi toki pona. mi kepeken nimi 4,900 ona tawa " +
-          "ni: ilo li pona ala pona? ilo li kama sona ala tan nimi ni.",
+        statsIntro: "mi lukin e nimi 4,900 tan lipu " +
+          "<a href='https://www.wikidata.org/'>Wikitata</a>. kulupu pi " +
+          "toki pona li pali e nimi ni. ilo li kama sona ala tan nimi ni.",
         colEngine: "nasin",
         colTop1: "sama",
         colTop4: "lon nanpa 4",
         colTop8: "lon nanpa 8",
-        statsNote: "ilo li ken ala pali e nimi mute. tan seme? kulupu li " +
-          "kepeken nimi tan toki pi ma sama. sitelen taso li ken ala pana " +
-          "e kalama ni. sona mute li lon " +
+        statsNote: "nimi mute la ilo li pakala. tan seme? ma li nimi e " +
+          "ona sama kepeken toki ona. kulupu li kepeken nimi ni. sitelen " +
+          "taso li ken ala pana e kalama ni. sona mute li lon " +
           "<a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>lipu eval</a>.",
         credit: "<a href='https://github.com/laurhinch'>jan Lolin</a> li pali e ni",
       },
