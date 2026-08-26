@@ -435,7 +435,6 @@
         .stats-table tr:last-child td {
             background: #d7efe8;
         }
-
     </style>
 </head>
 
@@ -450,9 +449,9 @@
         </div>
 
         <p class="tagline" data-i18n="tagline">
-                Turn any name into phonotactically valid toki pona.
-                Type a name and get the best fit plus scored alternatives.
-            </p>
+            Turn any name into phonotactically valid toki pona.
+            Type a name and get the best fit plus scored alternatives.
+        </p>
 
         <div class="card">
             <label for="name" data-i18n="nameLabel">nimi · name</label>
@@ -530,17 +529,17 @@
                 engineExp: "experimental",
                 copyTitle: "copy this tokiponization",
                 shareTitle: "copy a link to this name",
-                statsHead: "ilo li pona ala pona? · how good is it?",
+                statsHead: "ilo ni li pona ala pona? · does this tool work well?",
                 statsIntro: "Tested on ~4,900 real tokiponizations from " +
                     "<a href='https://www.wikidata.org/'>Wikidata</a>'s toki pona " +
-                    "labels, using only names the tool was never tuned on:",
+                    "labels.",
                 colEngine: "engine",
                 colTop1: "exact match",
                 colTop4: "in top 4",
                 colTop8: "in top 8",
                 statsNote: "Most misses are names based on what a place calls " +
-                    "itself, which spelling alone doesn't show. Details and data " +
-                    "live in <a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>eval/</a>.",
+                    "itself. Details and data " +
+                    "can be found in <a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>eval/</a>.",
                 credit: "made by <a href='https://github.com/laurhinch'>jan Lolin</a>",
             },
             tok: {
@@ -553,7 +552,7 @@
                 engineExp: "sin",
                 copyTitle: "o kama jo e nimi ni",
                 shareTitle: "o kama jo e nasin lipu ni",
-                statsHead: "ilo li pona ala pona?",
+                statsHead: "ilo ni li pona ala pona?",
                 statsIntro: "mi lukin e nimi 4900 tan lipu " +
                     "<a href='https://www.wikidata.org/'>Wikitata</a>. kulupu pi " +
                     "toki pona li pali e nimi ni. ilo li kama ala sona tan nimi ni.",
@@ -614,7 +613,7 @@
             btn.addEventListener("click", () => {
                 navigator.clipboard?.writeText(text());
                 btn.innerHTML = ICONS.done;
-                setTimeout(() => { btn.innerHTML = ICONS[kind]; }, 1200);
+                setTimeout(() => {btn.innerHTML = ICONS[kind];}, 1200);
             });
             return btn;
         }
