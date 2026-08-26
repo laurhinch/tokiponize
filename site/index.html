@@ -167,27 +167,42 @@
             overflow-wrap: anywhere;
         }
 
-        .copy-btn {
-            margin-top: 0.6rem;
-            padding: 0.3rem 0.8rem;
-            font: 700 0.8rem var(--font-display);
-            color: var(--neo-black);
-            background: var(--neo-white);
-            border: 2px solid var(--neo-black);
-            border-radius: 999px;
-            box-shadow: 2px 2px 0 var(--neo-black);
+        .best-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            padding: 0.2rem;
+            color: inherit;
+            background: none;
+            border: 0;
+            border-radius: var(--radius-ui);
             cursor: pointer;
-            transition: transform 0.15s var(--ease-spring), background 0.15s;
+            opacity: 0.55;
+            transition: opacity 0.15s, transform 0.15s var(--ease-spring);
         }
 
-        .copy-btn:hover {
-            transform: translate(-1px, -1px);
-            background: var(--neo-yellow);
+        .icon-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
-        .copy-btn:active {
-            transform: translate(1px, 1px);
-            box-shadow: none;
+        .icon-btn:focus-visible {
+            outline: 3px solid var(--neo-black);
+            opacity: 1;
+        }
+
+        .icon-btn.name-copy {
+            font-size: 1.5rem;
+        }
+
+        .icon-btn.share {
+            font-size: 1.15rem;
+            margin-top: 0.35rem;
         }
 
         .best-syls {
@@ -195,9 +210,6 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 0 0.8rem;
-        }
-
-        .best-syls {
             color: var(--text-secondary);
             font-size: 0.85rem;
             letter-spacing: 0.06em;
@@ -516,9 +528,8 @@
                 noResult: "ike a! nothing pronounceable came out of that.",
                 engineStd: "standard",
                 engineExp: "experimental",
-                copyLabel: "copy",
                 copyTitle: "copy this tokiponization",
-                copiedLabel: "copied!",
+                shareTitle: "copy a link to this name",
                 statsHead: "ilo li pona ala pona? · how good is it?",
                 statsIntro: "Tested on ~4,900 real tokiponizations from " +
                     "<a href='https://www.wikidata.org/'>Wikidata</a>'s toki pona " +
@@ -540,9 +551,8 @@
                 noResult: "ike a! mi ken ala pali e nimi pona tan ni.",
                 engineStd: "pona",
                 engineExp: "sin",
-                copyLabel: "o kama jo",
                 copyTitle: "o kama jo e nimi ni",
-                copiedLabel: "pona a!",
+                shareTitle: "o kama jo e nasin lipu ni",
                 statsHead: "ilo li pona ala pona?",
                 statsIntro: "mi lukin e nimi 4900 tan lipu " +
                     "<a href='https://www.wikidata.org/'>Wikitata</a>. kulupu pi " +
@@ -580,6 +590,33 @@
             if (className) node.className = className;
             if (text !== undefined) node.textContent = text;
             return node;
+        }
+
+        const svgAttrs = 'viewBox="0 0 24 24" width="1em" height="1em" ' +
+            'fill="none" stroke="currentColor" stroke-width="2.3" ' +
+            'stroke-linecap="round" stroke-linejoin="round"';
+
+        const ICONS = {
+            copy: `<svg ${svgAttrs}><rect x="9" y="9" width="12" height="12" rx="2.5"/>` +
+                `<path d="M6 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V6"/></svg>`,
+            share: `<svg ${svgAttrs}><circle cx="18" cy="5" r="2.6"/>` +
+                `<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/>` +
+                `<path d="M8.4 10.7 15.6 6.6M8.4 13.3l7.2 4.1"/></svg>`,
+            done: `<svg ${svgAttrs}><path d="M5 13l4 4L19 7"/></svg>`,
+        };
+
+        function iconButton(kind, className, label, text) {
+            const btn = el("button", `icon-btn ${className}`);
+            btn.type = "button";
+            btn.innerHTML = ICONS[kind];
+            btn.title = label;
+            btn.setAttribute("aria-label", label);
+            btn.addEventListener("click", () => {
+                navigator.clipboard?.writeText(text());
+                btn.innerHTML = ICONS.done;
+                setTimeout(() => { btn.innerHTML = ICONS[kind]; }, 1200);
+            });
+            return btn;
         }
 
         function copyOnClick(node, name) {
@@ -620,7 +657,13 @@
 
             const [best, ...alts] = candidates;
             const bestBox = el("div", "best");
-            bestBox.append(el("div", "best-name", best.name));
+
+            const nameRow = el("div", "best-row");
+            nameRow.append(el("div", "best-name", best.name));
+            nameRow.append(iconButton(
+                "copy", "name-copy", t("copyTitle"), () => best.name,
+            ));
+            bestBox.append(nameRow);
 
             // syllables per word, so multi-word names stay readable
             const sylRow = el("div", "best-syls");
@@ -630,16 +673,9 @@
             }
             if (sylRow.childElementCount) bestBox.append(sylRow);
 
-            const copy = el("button", "copy-btn", t("copyLabel"));
-            copy.type = "button";
-            copy.title = t("copyTitle");
-            copy.setAttribute("aria-label", t("copyTitle"));
-            copy.addEventListener("click", () => {
-                navigator.clipboard?.writeText(best.name);
-                copy.textContent = t("copiedLabel");
-                setTimeout(() => { copy.textContent = t("copyLabel"); }, 1200);
-            });
-            bestBox.append(copy);
+            bestBox.append(iconButton(
+                "share", "share", t("shareTitle"), () => location.href,
+            ));
             output.append(bestBox);
 
             if (alts.length) {
