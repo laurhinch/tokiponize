@@ -46,6 +46,31 @@ tokiponize --check Koti
 Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
 `--check`, `--experimental`).
 
+## API
+
+`api/worker.mjs` is a small Cloudflare Worker wrapping the library, so any
+tool that can fetch a URL can use it. No key, CORS open, 60 requests a
+minute per IP.
+
+```sh
+curl "https://nimi.toki.li/api/tokiponize?name=Marseille"
+# {"name":"Marseille","best":"Masi","candidates":[{"name":"Masi","score":-1.75}, ...]}
+
+curl "https://nimi.toki.li/api/check?name=Koti"
+# {"name":"Koti","valid":false,"syllables":null}
+```
+
+Both take `?name=`; `/tokiponize` also takes `&limit=` (max 8) and
+`&experimental=1`. Deploy your own with:
+
+```sh
+npm run build && npx wrangler deploy -c api/wrangler.toml
+```
+
+It is a plain `fetch` handler, so it also runs on Deno Deploy, Vercel, and
+Netlify with little change. JavaScript projects can skip the API and use
+the package directly.
+
 ## How it works
 
 Names are tokiponized in two steps:

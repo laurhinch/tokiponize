@@ -300,7 +300,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
   }
 }
 
-export function tokiponize(
+function tokiponizeWord(
   raw: string,
   options: TokiponizeOptions = {},
 ): Candidate[] {
@@ -379,6 +379,41 @@ export function tokiponize(
     }
   }
   return merged.slice(0, limit);
+}
+
+/** how many words a name may have before the rest is ignored */
+const MAX_WORDS = 8;
+
+/**
+ * Tokiponize a name. Each word is converted on its own and the results
+ * are recombined, so "Anna Karenina" gives "Ana Kawenina", not one word.
+ */
+export function tokiponize(
+  raw: string,
+  options: TokiponizeOptions = {},
+): Candidate[] {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return tokiponizeWord(raw, options);
+
+  const limit = options.limit ?? 4;
+  let combos: Candidate[] = [{ name: "", score: 0 }];
+  for (const word of words.slice(0, MAX_WORDS)) {
+    const cands = tokiponizeWord(word, options);
+    // a word with no reading at all (punctuation, han) just drops out
+    if (!cands.length) continue;
+    const next: Candidate[] = [];
+    for (const combo of combos) {
+      for (const c of cands) {
+        next.push({
+          name: combo.name ? `${combo.name} ${c.name}` : c.name,
+          score: Math.round((combo.score + c.score) * 100) / 100,
+        });
+      }
+    }
+    next.sort((a, b) => b.score - a.score);
+    combos = next.slice(0, limit * 4);
+  }
+  return combos[0]!.name ? combos.slice(0, limit) : [];
 }
 
 /** best single suggestion, or empty string. */

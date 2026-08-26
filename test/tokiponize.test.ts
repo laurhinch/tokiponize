@@ -312,6 +312,14 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(tokiponizeBest("이서연"), "Isojon"); // I Seo-yeon
   });
 
+  test("each word of a name converts on its own", () => {
+    assert.equal(tokiponizeBest("Anna Karenina"), "Ana Kawenina");
+    // every word of every candidate stays a valid name on its own
+    for (const c of tokiponize("Ludwig van Beethoven", { limit: 4 })) {
+      for (const word of c.name.split(" ")) assert.ok(isValidName(word), word);
+    }
+  });
+
   test("experimental model keeps the rule engine's top pick and only adds valid names", () => {
     for (const name of ["Lauren", "Suomi", "María"]) {
       const ruled = tokiponize(name)[0]!.name;

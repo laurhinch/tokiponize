@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tokiponize</title>
     <meta name="description" content="Turn any name into phonotactically valid toki pona, with scored alternatives." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="tokiponize" />
+    <meta property="og:title" content="tokiponize" />
+    <meta property="og:description"
+        content="Turn any name into phonotactically valid toki pona, with scored alternatives." />
+    <meta property="og:url" content="https://laurhinch.github.io/tokiponize/" />
+    <meta name="theme-color" content="#f4ecdd" />
+    <meta name="twitter:card" content="summary" />
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -385,6 +393,25 @@
         .stats-table tr:last-child td {
             background: #d7efe8;
         }
+
+        pre {
+            margin: 0;
+            padding: 0.7rem 0.85rem;
+            background: var(--neo-cream);
+            border: 2px solid var(--neo-black);
+            border-radius: var(--radius-ui);
+            overflow-x: auto;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        pre+pre {
+            margin-top: 0.5rem;
+        }
+
+        code {
+            font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        }
     </style>
 </head>
 
@@ -406,7 +433,7 @@
             <label for="name" data-i18n="nameLabel">nimi · name</label>
             <input id="name" type="text" placeholder="Christopher, Marseille, København…" autocomplete="off"
                 autocapitalize="off" spellcheck="false" autofocus />
-            <div id="output">
+            <div id="output" aria-live="polite">
                 <p class="hint">o sitelen e nimi!</p>
             </div>
             <label class="engine-row">
@@ -451,6 +478,26 @@
                 <a href="https://github.com/laurhinch/tokiponize/tree/main/eval">eval/</a>.
             </p>
         </div>
+        <div class="card">
+            <h2 data-i18n="apiHead">API</h2>
+            <p data-i18n="apiIntro">
+                Free, no key, CORS open, 60 requests a minute. Any tool that
+                can fetch a URL can use it.
+            </p>
+            <pre><code>curl "<span class="api-base"></span>/tokiponize?name=Marseille"</code></pre>
+            <pre><code>{
+  "name": "Marseille",
+  "best": "Masi",
+  "candidates": [{ "name": "Masi", "score": -1.75 }, ...]
+}</code></pre>
+            <p data-i18n-html="apiNote">
+                Options: <code>&amp;limit=8</code>,
+                <code>&amp;experimental=1</code>. There is also
+                <code>/check?name=Koti</code> to test whether a name is
+                already valid toki pona. In JavaScript you can skip the API
+                and <code>npm install tokiponize</code> instead.
+            </p>
+        </div>
     </main>
 
     <footer>
@@ -462,10 +509,17 @@
     <script type="module">
         import {tokiponize, syllabify} from "./lib/index.js";
 
+        // change this when the worker moves
+        const API_BASE = "https://nimi.toki.li/api";
+
         const input = document.getElementById("name");
         const output = document.getElementById("output");
         const engine = document.getElementById("engine");
         const langSelect = document.getElementById("lang");
+
+        for (const node of document.querySelectorAll(".api-base")) {
+            node.textContent = API_BASE;
+        }
 
         const STRINGS = {
             en: {
@@ -487,6 +541,14 @@
                 statsNote: "Most misses are names based on what a place calls " +
                     "itself, which spelling alone doesn't show. Details and data " +
                     "live in <a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>eval/</a>.",
+                apiHead: "API",
+                apiIntro: "Free, no key, CORS open, 60 requests a minute. " +
+                    "Any tool that can fetch a URL can use it.",
+                apiNote: "Options: <code>&limit=8</code>, " +
+                    "<code>&experimental=1</code>. There is also " +
+                    "<code>/check?name=Koti</code> to test whether a name is " +
+                    "already valid toki pona. In JavaScript you can skip the " +
+                    "API and <code>npm install tokiponize</code> instead.",
                 credit: "made by <a href='https://github.com/laurhinch'>jan Lolin</a>",
             },
             tok: {
@@ -498,13 +560,19 @@
                 engineStd: "pona",
                 engineExp: "sin",
                 statsHead: "ilo li pona ala pona?",
-                statsIntro: "mi lukin e nimi sama 4900 tan lipu " +
+                statsIntro: "mi lukin e nimi 4900 tan lipu " +
                     "<a href='https://www.wikidata.org/'>Wikitata</a>. kulupu pi " +
                     "toki pona li pali e nimi ni. ilo li kama ala sona tan nimi ni.",
                 colEngine: "nasin",
                 colTop1: "sama",
                 colTop4: "lon sewi 4",
                 colTop8: "lon sewi 8",
+                apiHead: "ilo API",
+                apiNote: "sina ken kepeken e <code>&limit=8</code> e " +
+                    "<code>&experimental=1</code>. <code>/check?name=Koti</code> " +
+                    "li toki e ni: nimi li pona ala pona lon toki pona.",
+                apiIntro: "ni li lon ala mani. ilo ale li ken kepeken e ona. " +
+                    "tenpo lili wan la sina ken kepeken e ona tan 60.",
                 statsNote: "nimi mute la ilo li pakala. tan seme? ma li nimi e " +
                     "ona sama kepeken toki ona. kulupu li kepeken nimi ni. sitelen " +
                     "taso li ken ala pana e kalama ni. sona mute li lon " +
@@ -545,8 +613,17 @@
             });
         }
 
+        // keep the address bar in sync so results can be linked
+        function syncUrl(raw) {
+            const url = new URL(location.href);
+            if (raw) url.searchParams.set("nimi", raw);
+            else url.searchParams.delete("nimi");
+            history.replaceState(null, "", url);
+        }
+
         function render() {
             const raw = input.value.trim();
+            syncUrl(raw);
             output.replaceChildren();
 
             if (!raw) {
@@ -587,6 +664,9 @@
         input.addEventListener("input", render);
         engine.addEventListener("change", render);
         langSelect.addEventListener("change", applyLang);
+
+        const shared = new URL(location.href).searchParams.get("nimi");
+        if (shared) input.value = shared;
         render();
     </script>
 </body>
