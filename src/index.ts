@@ -133,6 +133,10 @@ export const PEN = {
   initialVowelDrop: -1.75,
   // word-final nasal+vowel to coda n (Pechino -> Pesin)
   finalNasalClip: -1.1,
+  // Latin r read as a tap (Peru -> Pelu), community often prefers it
+  latinRAsL: -0.3,
+  // community habit of ending names in a (Kanado -> Kanata)
+  finalAShift: -0.55,
   // keeping a probably-silent English final e pronounced
   pronouncedFinalE: -0.5,
   epenthesis: -1.8,
@@ -315,6 +319,15 @@ export function tokiponize(
       ]
       : [{ ph: phStr, bias: 0 }];
 
+  // ambiguous Latin r also beams as a tap (Peru -> Pelu)
+  if (tokens.includes("rw")) {
+    const lStr = tokensToPhonemes(tokens.map((t) => (t === "rw" ? "l" : t)));
+    for (const v of [...variants]) {
+      const ph = v.ph.length === phStr.length ? lStr : lStr.slice(0, -1);
+      variants.push({ ph, bias: v.bias + PEN.latinRAsL });
+    }
+  }
+
   const done: State[] = [];
   for (const v of variants) beamSearch(v.ph, v.bias, done);
 
@@ -329,6 +342,17 @@ export function tokiponize(
     if (!isValidName(cased)) continue;
     const prev = seen.get(cased);
     if (prev === undefined || score > prev) seen.set(cased, score);
+  }
+
+  // community habit: names like ending in a (Kanado -> Kanata)
+  for (const [name, score] of [...seen.entries()]) {
+    const last = name[name.length - 1]!;
+    if (!"eiou".includes(last)) continue;
+    const shifted = name.slice(0, -1) + "a";
+    const s = score + PEN.finalAShift;
+    if (!isValidName(shifted)) continue;
+    const prev = seen.get(shifted);
+    if (prev === undefined || s > prev) seen.set(shifted, s);
   }
 
   const ruled = [...seen.entries()]

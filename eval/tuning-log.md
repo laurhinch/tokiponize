@@ -51,6 +51,15 @@ After the data expansion (49 label languages, aliases in 9 languages,
 | rules | .400 | .466 | .470 | .530 |
 | hybrid | .400 | .527 | .552 | .448 |
 
+After back-porting model taste into the rules (latinRAsL -0.3,
+finalAShift -0.55) plus letter-name reading for short/vowelless
+all-caps initialisms (UK -> Juke):
+
+| engine | top1 | top4 | top8 | unreachable |
+|--------|------|------|------|-------------|
+| rules | .408 | .506 | .518 | .482 |
+| hybrid | .408 | .545 | .574 | .426 |
+
 ## Conclusions
 
 - Baseline -> final: top1 .271 -> .328, dist .307 -> .275, all 45 tests green.

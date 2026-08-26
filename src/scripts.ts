@@ -116,7 +116,23 @@ const BASE_LETTER: Record<string, string> = {
   r: "rw",
 };
 
+// English letter names, for initialisms read letter by letter (UK -> Juke)
+const LETTER_NAMES: Record<string, string[]> = {
+  a: ["e"], b: ["b", "i"], c: ["s", "i"], d: ["d", "i"], e: ["i"],
+  f: ["e", "f"], g: ["ch", "i"], h: ["e", "ch"], i: ["a", "j"],
+  j: ["ch", "e"], k: ["k", "e"], l: ["e", "l"], m: ["e", "m"],
+  n: ["e", "n"], o: ["o"], p: ["p", "i"], q: ["k", "j", "u"],
+  r: ["a", "rw"], s: ["e", "s"], t: ["t", "i"], u: ["j", "u"],
+  v: ["w", "i"], w: ["w", "a"], x: ["e", "k", "s"], y: ["w", "a", "j"],
+  z: ["s", "i"],
+};
+
 function latinTokens(raw: string): string[] {
+  // short or vowelless all-caps reads as letter names, not as a word
+  // (UK, USSR); pronounceable acronyms (NASA) still read as words
+  if (/^[A-Z]{2,6}$/.test(raw) && (raw.length <= 3 || !/[AEIOU]/.test(raw))) {
+    return raw.toLowerCase().split("").flatMap((ch) => LETTER_NAMES[ch]!);
+  }
   let s = "";
   for (const ch of raw) s += SPECIAL_LATIN[ch.toLowerCase()] ?? ch;
   s = s
