@@ -40,16 +40,27 @@ jobs:
       # a broken worker still serves the site, so it needs saying out loud
       - name: Check the worker answers
         run: |
-          # the image needs og-atlas.json, which Pages is deploying in
-          # parallel, so give that time to land
+          UA="Mozilla/5.0 (compatible; tokiponize-ci/1.0)"
+          get() { curl -sS -m 20 -A "$UA" -w '\n%{http_code}' "https://nimi.toki.li$1"; }
+          # the image needs og-atlas.json, which Pages deploys in parallel
           for i in $(seq 12); do
             sleep 10
-            ok=1
-            curl -fsS "https://nimi.toki.li/api/tokiponize?name=Jakarta" | grep -q Jakata || ok=0
-            curl -fsS -o /dev/null "https://nimi.toki.li/og.png?nimi=Jakarta" || ok=0
-            curl -fsS "https://nimi.toki.li/?nimi=Jakarta" | grep -qE 'og:title[^>]*Jakata' || ok=0
-            if [ "$ok" = 1 ]; then echo "worker is answering"; exit 0; fi
-            echo "attempt $i not ready yet"
+            api=$(get "/api/tokiponize?name=Jakarta")
+            img=$(get "/og.png?nimi=Jakarta")
+            page=$(get "/?nimi=Jakarta")
+            codes="$(echo "$api" | tail -1) $(echo "$img" | tail -1) $(echo "$page" | tail -1)"
+            case "$codes" in
+              *403*)
+                echo "cloudflare blocked this runner ($codes), cannot verify from CI"
+                exit 0 ;;
+            esac
+            if echo "$api" | grep -q Jakata &&
+               [ "$(echo "$img" | tail -1)" = 200 ] &&
+               echo "$page" | grep -qE 'og:title[^>]*Jakata'; then
+              echo "worker is answering"
+              exit 0
+            fi
+            echo "attempt $i: $codes"
           done
           echo "worker did not answer correctly after deploy" >&2
           exit 1

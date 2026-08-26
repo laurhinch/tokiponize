@@ -2,10 +2,9 @@ name = "tokiponize"
 main = "worker.mjs"
 compatibility_date = "2026-08-01"
 
-# only these three paths reach the worker, so a bad deploy can't take the
-# rest of the site down with it
+# route patterns are matched against the query string as well, so a
+# pattern without a trailing * never sees /?nimi=x or /og.png?nimi=x.
+# everything the worker does not handle is passed straight to Pages.
 routes = [
-  { pattern = "nimi.toki.li/", zone_name = "toki.li" },
-  { pattern = "nimi.toki.li/og.png", zone_name = "toki.li" },
-  { pattern = "nimi.toki.li/api/*", zone_name = "toki.li" },
+  { pattern = "nimi.toki.li/*", zone_name = "toki.li" },
 ]
