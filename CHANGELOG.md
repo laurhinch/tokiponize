@@ -1,5 +1,11 @@
 # tokiponize
 
+## 1.2.0
+
+### Minor Changes
+
+- 0289383: Treat English word-final silent e as silent (Telephone -> Telepon), keeping the pronounced form as an alternative.
+
 ## 1.1.0
 
 ### Minor Changes

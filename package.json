@@ -1,6 +1,6 @@
 {
   "name": "tokiponize",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Tokiponize proper nouns: convert names into phonotactically valid toki pona, with scored alternatives.",
   "type": "module",
   "main": "dist/index.js",
