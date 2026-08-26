@@ -22,6 +22,9 @@ const PHONEME_TO_TP: Record<string, string> = {
   i: "i",
   o: "o",
   u: "u",
+  // final e latinTokens marked as probably silent; tokiponize handles the
+  // clipped reading itself, this keeps toPhonemes complete
+  "e?": "e",
   // nasals
   m: "m",
   n: "n",
@@ -57,13 +60,17 @@ const PHONEME_TO_TP: Record<string, string> = {
   w: "w",
 };
 
-/** Read raw input into the toki pona phoneme inventory. */
-export function toPhonemes(raw: string): string {
+function tokensToPhonemes(tokens: string[]): string {
   let out = "";
-  for (const tok of textToTokens(raw)) out += PHONEME_TO_TP[tok] ?? "";
+  for (const tok of tokens) out += PHONEME_TO_TP[tok] ?? "";
   // consonants only, same as scripts.ts: a doubled vowel here is real
   // hiatus for the syllabifier to resolve, not noise to erase
   return out.replace(/([^aeiou])\1+/g, "$1");
+}
+
+/** Read raw input into the toki pona phoneme inventory. */
+export function toPhonemes(raw: string): string {
+  return tokensToPhonemes(textToTokens(raw));
 }
 
 interface SylOption {
@@ -116,6 +123,8 @@ const PEN = {
   // drop the word's last consonant cheaper than a mid-cluster one
   finalDrop: -0.75,
   dropVowel: -1.75,
+  // keeping a probably-silent English final e pronounced
+  pronouncedFinalE: -0.5,
   epenthesis: -1,
   glideNatural: -0.4,
   glideOther: -1.25,
@@ -146,17 +155,9 @@ function codaAllowed(ph: string[], nIndex: number, syls: string[]): boolean {
   return !VOWELS.has(next);
 }
 
-export function tokiponize(
-  raw: string,
-  options: TokiponizeOptions = {},
-): Candidate[] {
-  const limit = options.limit ?? 4;
-  const phStr = toPhonemes(raw);
-  if (!phStr) return [];
+function beamSearch(phStr: string, bias: number, done: State[]): void {
   const ph = [...phStr];
-
-  let active: State[] = [{ i: 0, syls: [], score: 0 }];
-  const done: State[] = [];
+  let active: State[] = [{ i: 0, syls: [], score: bias }];
 
   while (active.length) {
     const nextActive: State[] = [];
@@ -198,6 +199,21 @@ export function tokiponize(
 
       const next = ph[st.i + 1];
       if (next !== undefined && VOWELS.has(next)) {
+        // a word-final nasal+vowel can instead close the previous syllable
+        // with a coda n (Telephone -> Telepon alongside Telepone)
+        if (
+          (ch === "n" || ch === "m") &&
+          st.i + 2 === ph.length &&
+          st.syls.length &&
+          !st.syls[st.syls.length - 1]!.endsWith("n")
+        ) {
+          nextActive.push({
+            i: st.i + 2,
+            syls: [...st.syls.slice(0, -1), st.syls[st.syls.length - 1] + "n"],
+            score: st.score + PEN.dropVowel +
+              (ch === "m" ? PEN.finalMToN : 0),
+          });
+        }
         for (const opt of cvOptions(ch, next, wordInitial)) {
           const syls = [...st.syls, opt.syl];
           const base = { i: st.i + 2, syls, score: st.score + opt.penalty };
@@ -255,6 +271,29 @@ export function tokiponize(
     nextActive.sort((a, b) => b.score - a.score);
     active = nextActive.slice(0, BEAM_WIDTH);
   }
+}
+
+export function tokiponize(
+  raw: string,
+  options: TokiponizeOptions = {},
+): Candidate[] {
+  const limit = options.limit ?? 4;
+  const tokens = textToTokens(raw);
+  const phStr = tokensToPhonemes(tokens);
+  if (!phStr) return [];
+
+  // a final e latinTokens marked probably-silent reads clipped by default,
+  // with the pronounced form kept as a close alternative
+  const variants: Array<{ ph: string; bias: number }> =
+    tokens[tokens.length - 1] === "e?" && /[^aeiou]e$/.test(phStr)
+      ? [
+        { ph: phStr.slice(0, -1), bias: 0 },
+        { ph: phStr, bias: PEN.pronouncedFinalE },
+      ]
+      : [{ ph: phStr, bias: 0 }];
+
+  const done: State[] = [];
+  for (const v of variants) beamSearch(v.ph, v.bias, done);
 
   const seen = new Map<string, number>();
   for (const st of done) {

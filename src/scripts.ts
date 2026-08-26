@@ -159,6 +159,17 @@ function latinTokens(raw: string): string[] {
     } else tokens.push(BASE_LETTER[ch] ?? "");
     i += 1;
   }
+  // English final e after a consonant is silent more often than not (Kate,
+  // Simone). Mark it so tokiponize can rank the clipped reading first while
+  // keeping the pronounced one as an alternative.
+  const last = tokens.length - 1;
+  if (
+    s.endsWith("e") && tokens[last] === "e" && last > 0 &&
+    !"aeiou".includes(tokens[last - 1]!) &&
+    tokens.slice(0, last).some((t) => "aeiou".includes(t))
+  ) {
+    tokens[last] = "e?";
+  }
   return tokens;
 }
 

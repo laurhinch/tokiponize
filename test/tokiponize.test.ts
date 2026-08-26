@@ -106,6 +106,28 @@ describe("known tokiponizations", () => {
     assert.equal(tokiponizeBest("Chris"), "Kiwisi");
   });
 
+  test("English silent final e: the clipped reading ranks first, the pronounced one stays an option", () => {
+    const tel = tokiponize("telephone", { limit: 8 }).map((c) => c.name);
+    assert.equal(tel[0], "Telepon");
+    assert.ok(tel.includes("Telepone"));
+    const simone = tokiponize("Simone", { limit: 8 }).map((c) => c.name);
+    assert.equal(simone[0], "Simon");
+    assert.ok(simone.includes("Simone"));
+  });
+
+  test("a final e stays pronounced when it isn't the English silent pattern", () => {
+    // kana spell the vowel explicitly, so there is nothing to guess
+    assert.equal(tokiponizeBest("かね"), "Kane");
+    // a vowel before the final e means it's pronounced (Zoe, Chloe)
+    assert.equal(tokiponizeBest("Zoe"), "Sowe");
+  });
+
+  test("a word-final nasal+vowel offers an n-coda alternative", () => {
+    const simona = tokiponize("Simona", { limit: 8 }).map((c) => c.name);
+    assert.equal(simona[0], "Simona");
+    assert.ok(simona.includes("Simon"));
+  });
+
   test("wu/wo starts use the alternatives table", () => {
     for (const c of tokiponize("Woody", { limit: 8 })) {
       assert.equal(c.name.toLowerCase().startsWith("wu"), false);
