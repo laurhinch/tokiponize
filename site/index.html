@@ -229,7 +229,7 @@
       color: var(--text-secondary);
     }
 
-    .engine-row select {
+    select {
       font: 700 0.85rem var(--font-body);
       color: var(--neo-black);
       background: var(--neo-white);
@@ -237,6 +237,13 @@
       border-radius: var(--radius-ui);
       padding: 0.3rem 0.5rem;
       cursor: pointer;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
     }
 
     h2 {
@@ -267,14 +274,20 @@
 </head>
 <body>
   <main>
-    <h1>tokiponize</h1>
-    <p class="tagline">
+    <div class="top-row">
+      <h1>tokiponize</h1>
+      <select id="lang" aria-label="language">
+        <option value="en">English</option>
+        <option value="tok">toki pona</option>
+      </select>
+    </div>
+    <p class="tagline" data-i18n="tagline">
       Turn any name into phonotactically valid toki pona.
       Type a name and get the best fit plus scored alternatives.
     </p>
 
     <div class="card">
-      <label for="name">nimi · name</label>
+      <label for="name" data-i18n="nameLabel">nimi · name</label>
       <input id="name" type="text" placeholder="Christopher, Marseille, København…"
              autocomplete="off" autocapitalize="off" spellcheck="false" autofocus />
       <div id="output">
@@ -283,25 +296,30 @@
       <label class="engine-row">
         nasin
         <select id="engine">
-          <option value="rules">standard</option>
-          <option value="experimental">experimental</option>
+          <option value="rules" data-i18n="engineStd">standard</option>
+          <option value="experimental" data-i18n="engineExp">experimental</option>
         </select>
       </label>
     </div>
 
     <div class="card">
-      <h2>seme pona · how good is it?</h2>
-      <p>
+      <h2 data-i18n="statsHead">ilo li pona ala pona? · how good is it?</h2>
+      <p data-i18n-html="statsIntro">
         Tested on ~4,900 real tokiponizations from
         <a href="https://www.wikidata.org/">Wikidata</a>'s toki pona labels,
         using only names the tool was never tuned on:
       </p>
       <table class="stats-table">
-        <tr><th>engine</th><th>exact match</th><th>in top 4</th><th>in top 8</th></tr>
-        <tr><td>rules</td><td>41%</td><td>51%</td><td>52%</td></tr>
-        <tr><td>experimental</td><td>41%</td><td>54%</td><td>57%</td></tr>
+        <tr>
+          <th data-i18n="colEngine">engine</th>
+          <th data-i18n="colTop1">exact match</th>
+          <th data-i18n="colTop4">in top 4</th>
+          <th data-i18n="colTop8">in top 8</th>
+        </tr>
+        <tr><td data-i18n="engineStd">standard</td><td>41%</td><td>51%</td><td>52%</td></tr>
+        <tr><td data-i18n="engineExp">experimental</td><td>41%</td><td>54%</td><td>57%</td></tr>
       </table>
-      <p>
+      <p data-i18n-html="statsNote">
         Most misses are names based on what a place calls itself, which
         spelling alone doesn't show. Details and data live in
         <a href="https://github.com/laurhinch/tokiponize/tree/main/eval">eval/</a>.
@@ -312,7 +330,7 @@
   <footer>
     <a href="https://github.com/laurhinch/tokiponize">GitHub</a> ·
     <a href="https://www.npmjs.com/package/tokiponize">npm</a> ·
-    made by <a href="https://github.com/laurhinch">jan Lolin</a>
+    <span data-i18n-html="credit">made by <a href="https://github.com/laurhinch">jan Lolin</a></span>
   </footer>
 
   <script type="module">
@@ -321,6 +339,68 @@
     const input = document.getElementById("name");
     const output = document.getElementById("output");
     const engine = document.getElementById("engine");
+    const langSelect = document.getElementById("lang");
+
+    const STRINGS = {
+      en: {
+        tagline: "Turn any name into phonotactically valid toki pona. " +
+          "Type a name and get the best fit plus scored alternatives.",
+        nameLabel: "nimi · name",
+        hint: "o sitelen e nimi!",
+        noResult: "ike a! nothing pronounceable came out of that.",
+        engineStd: "standard",
+        engineExp: "experimental",
+        statsHead: "ilo li pona ala pona? · how good is it?",
+        statsIntro: "Tested on ~4,900 real tokiponizations from " +
+          "<a href='https://www.wikidata.org/'>Wikidata</a>'s toki pona " +
+          "labels, using only names the tool was never tuned on:",
+        colEngine: "engine",
+        colTop1: "exact match",
+        colTop4: "in top 4",
+        colTop8: "in top 8",
+        statsNote: "Most misses are names based on what a place calls " +
+          "itself, which spelling alone doesn't show. Details and data " +
+          "live in <a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>eval/</a>.",
+        credit: "made by <a href='https://github.com/laurhinch'>jan Lolin</a>",
+      },
+      tok: {
+        tagline: "ilo ni li ante e nimi tawa toki pona. " +
+          "sina sitelen e nimi la ona li pana e nimi pona mute.",
+        nameLabel: "nimi",
+        hint: "o sitelen e nimi!",
+        noResult: "ike a! mi ken ala pali e nimi pona tan ni.",
+        engineStd: "pona",
+        engineExp: "sin",
+        statsHead: "ilo li pona ala pona?",
+        statsIntro: "lipu <a href='https://www.wikidata.org/'>Wikidata</a> " +
+          "li jo e nimi mute pi toki pona. mi kepeken nimi 4,900 ona tawa " +
+          "ni: ilo li pona ala pona? ilo li kama sona ala tan nimi ni.",
+        colEngine: "nasin",
+        colTop1: "sama",
+        colTop4: "lon nanpa 4",
+        colTop8: "lon nanpa 8",
+        statsNote: "ilo li ken ala pali e nimi mute. tan seme? kulupu li " +
+          "kepeken nimi tan toki pi ma sama. sitelen taso li ken ala pana " +
+          "e kalama ni. sona mute li lon " +
+          "<a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>lipu eval</a>.",
+        credit: "<a href='https://github.com/laurhinch'>jan Lolin</a> li pali e ni",
+      },
+    };
+
+    let lang = "en";
+    const t = (key) => STRINGS[lang][key];
+
+    function applyLang() {
+      lang = langSelect.value;
+      document.documentElement.lang = lang;
+      for (const node of document.querySelectorAll("[data-i18n]")) {
+        node.textContent = t(node.dataset.i18n);
+      }
+      for (const node of document.querySelectorAll("[data-i18n-html]")) {
+        node.innerHTML = t(node.dataset.i18nHtml);
+      }
+      render();
+    }
 
     function el(tag, className, text) {
       const node = document.createElement(tag);
@@ -334,7 +414,7 @@
       output.replaceChildren();
 
       if (!raw) {
-        output.append(el("p", "hint", "o sitelen e nimi!"));
+        output.append(el("p", "hint", t("hint")));
         return;
       }
 
@@ -343,7 +423,7 @@
         experimental: engine.value === "experimental",
       });
       if (!candidates.length) {
-        output.append(el("div", "no-result", "ike a! nothing pronounceable came out of that."));
+        output.append(el("div", "no-result", t("noResult")));
         return;
       }
 
@@ -368,6 +448,7 @@
 
     input.addEventListener("input", render);
     engine.addEventListener("change", render);
+    langSelect.addEventListener("change", applyLang);
     render();
   </script>
 </body>
