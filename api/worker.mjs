@@ -31,9 +31,14 @@ function limited(ip) {
 
 let atlasPromise = null;
 function atlas() {
+  // drop a failed fetch, or one bad moment would poison this isolate
   atlasPromise ??= fetch(`${SITE}/og-atlas.json`)
-    .then((r) => r.json())
-    .then(prepareAtlas);
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+    .then(prepareAtlas)
+    .catch((err) => {
+      atlasPromise = null;
+      throw err;
+    });
   return atlasPromise;
 }
 

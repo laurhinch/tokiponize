@@ -40,8 +40,10 @@ jobs:
       # a broken worker still serves the site, so it needs saying out loud
       - name: Check the worker answers
         run: |
-          for i in 1 2 3 4 5; do
-            sleep 6
+          # the image needs og-atlas.json, which Pages is deploying in
+          # parallel, so give that time to land
+          for i in $(seq 12); do
+            sleep 10
             ok=1
             curl -fsS "https://nimi.toki.li/api/tokiponize?name=Jakarta" | grep -q Jakata || ok=0
             curl -fsS -o /dev/null "https://nimi.toki.li/og.png?nimi=Jakarta" || ok=0
