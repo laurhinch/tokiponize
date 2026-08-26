@@ -1,5 +1,11 @@
 # tokiponize
 
+## 1.4.0
+
+### Minor Changes
+
+- cc53c09: Convert each word of a name separately instead of running them together: "Anna Karenina" now gives "Ana Kawenina", not "Anakawenina".
+
 ## 1.3.0
 
 ### Minor Changes
