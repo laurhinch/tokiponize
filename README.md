@@ -1,7 +1,15 @@
-# tokiponize
+<p align="center">
+  <img src="site/banner.png" alt="tokiponize: turn any name into toki pona" width="640">
+</p>
+
+<p align="center">
+  <a href="https://nimi.toki.li">nimi.toki.li</a> |
+  <a href="https://www.npmjs.com/package/tokiponize">npm</a> |
+  <a href="#free-api">free API</a>
+</p>
 
 Convert foreign names into phonotactically valid **toki pona**, with scored
-alternatives. Usable as a library or from the command line!
+alternatives. Usable as a library, from the command line, or over HTTP!
 
 ```ts
 import { tokiponize, tokiponizeBest, isValidName, syllabify } from "tokiponize";
@@ -46,8 +54,36 @@ tokiponize --check Koti
 Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
 `--check`, `--experimental`).
 
-Not using JavaScript? `curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"`
-returns the same candidates as JSON.
+## Free API
+
+No key, no signup. Anything that can fetch a URL gets the same candidates
+the library returns:
+
+```sh
+curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
+```
+
+```json
+{
+  "name": "Jakarta",
+  "best": "Jakata",
+  "candidates": [
+    { "name": "Jakata", "score": -1.2 },
+    { "name": "Jakawata", "score": -2.9 },
+    { "name": "Jakalata", "score": -3.2 }
+  ]
+}
+```
+
+| parameter | what it does |
+|-----------|--------------|
+| `name` | the name to convert, spaces and all (required) |
+| `limit` | how many candidates, 1 to 8 (default 4) |
+| `experimental` | `1` to mix in the learned suggestions |
+
+Quote the URL in a shell, or `&` gets read as "run in the background". You
+get 120 requests a minute per IP, and a `429` past that. CORS is open and
+responses cache for an hour, so calling it from a browser works too.
 
 ## How it works
 
