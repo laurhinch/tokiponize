@@ -1,5 +1,16 @@
 # tokiponize
 
+## 1.4.0
+
+### Minor Changes
+
+- cc53c09: Convert each word of a name separately instead of running them together: "Anna Karenina" now gives "Ana Kawenina", not "Anakawenina".
+
+### Patch Changes
+
+- 740fccd: Read Greek digraphs as single sounds instead of letter by letter. `ου` is now u rather than "oi", `για` is ja rather than "kia", and `μπ`/`ντ` give b/d, so Γιάννης comes out as Janisi and Λουκάς as Lukasa. A diaeresis still keeps two vowels apart.
+- 740fccd: Stop dropping the sound a name starts with. Christopher was coming out as "Witope" and Vladimir as "Lasimi"; they now keep their first consonant (Kiwitope, Walasimi).
+
 ## 1.3.0
 
 ### Minor Changes
