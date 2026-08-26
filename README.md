@@ -81,6 +81,19 @@ curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
 | `limit` | how many candidates, 1 to 8 (default 4) |
 | `experimental` | `1` to mix in the learned suggestions |
 
+## Sharing a result
+
+Every result has its own link, and pasting one into Discord (or anywhere
+else that reads OpenGraph tags) draws the name as a card:
+
+<p align="center">
+  <img src="site/embed-preview.png" alt="a tokiponize link unfurled in Discord, showing emily becoming Emili" width="620">
+</p>
+
+Grab the link with the share button under any result, or build it yourself:
+`https://nimi.toki.li/?nimi=emily`. The card is drawn per name when the
+link gets unfurled.
+
 ## How it works
 
 Names are tokiponized in two steps:
