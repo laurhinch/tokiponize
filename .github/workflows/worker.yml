@@ -1,0 +1,53 @@
+name: Deploy Worker
+
+# the worker bundles dist/, so it redeploys when the library changes too
+on:
+  push:
+    branches: [main]
+    paths:
+      - api/**
+      - src/**
+      - package.json
+      - package-lock.json
+      - .github/workflows/worker.yml
+  workflow_dispatch:
+
+concurrency:
+  group: worker
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config api/wrangler.toml
+
+      # a broken worker still serves the site, so it needs saying out loud
+      - name: Check the worker answers
+        run: |
+          for i in 1 2 3 4 5; do
+            sleep 6
+            ok=1
+            curl -fsS "https://nimi.toki.li/api/tokiponize?name=Jakarta" | grep -q Jakata || ok=0
+            curl -fsS -o /dev/null "https://nimi.toki.li/og.png?nimi=Jakarta" || ok=0
+            curl -fsS "https://nimi.toki.li/?nimi=Jakarta" | grep -qE 'og:title[^>]*Jakata' || ok=0
+            if [ "$ok" = 1 ]; then echo "worker is answering"; exit 0; fi
+            echo "attempt $i not ready yet"
+          done
+          echo "worker did not answer correctly after deploy" >&2
+          exit 1
