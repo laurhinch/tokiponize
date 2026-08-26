@@ -1,37 +1,14 @@
 name: Release
 
+# releases are cut by hand: npx changeset version, commit, tag, push
 on:
   push:
-    branches: [main]
     tags: ["v*.*.*"]
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  version-pr:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-          cache: npm
-
-      - run: npm ci
-
-      - uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
