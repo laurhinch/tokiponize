@@ -219,6 +219,46 @@
         transition-duration: 0.01ms !important;
       }
     }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .toggle-row input {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--neo-red);
+      box-shadow: none;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      margin: 0 0 0.5rem;
+    }
+
+    .card p { margin: 0.35rem 0; font-size: 0.9rem; color: var(--text-secondary); }
+
+    .stats-table {
+      width: 100%;
+      margin-top: 0.75rem;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .stats-table th, .stats-table td {
+      border: var(--neo-border) solid var(--neo-black);
+      padding: 0.4rem 0.5rem;
+      text-align: center;
+    }
+
+    .stats-table th { background: var(--neo-yellow); }
+    .stats-table td:first-child, .stats-table th:first-child { text-align: left; }
+
   </style>
 </head>
 <body>
@@ -236,6 +276,29 @@
       <div id="output">
         <p class="hint">o sitelen e nimi!</p>
       </div>
+      <label class="toggle-row">
+        <input id="experimental" type="checkbox" />
+        experimental: add suggestions learned from community usage
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>seme pona · how good is it?</h2>
+      <p>
+        Tested on ~4,900 real tokiponizations from
+        <a href="https://www.wikidata.org/">Wikidata</a>'s toki pona labels,
+        using only names the tool was never tuned on:
+      </p>
+      <table class="stats-table">
+        <tr><th>engine</th><th>exact match</th><th>in top 4</th><th>in top 8</th></tr>
+        <tr><td>rules</td><td>41%</td><td>51%</td><td>52%</td></tr>
+        <tr><td>experimental</td><td>41%</td><td>54%</td><td>57%</td></tr>
+      </table>
+      <p>
+        Most misses are names based on what a place calls itself, which
+        spelling alone doesn't show. Details and data live in
+        <a href="https://github.com/laurhinch/tokiponize/tree/main/eval">eval/</a>.
+      </p>
     </div>
   </main>
 
@@ -250,6 +313,7 @@
 
     const input = document.getElementById("name");
     const output = document.getElementById("output");
+    const experimental = document.getElementById("experimental");
 
     function el(tag, className, text) {
       const node = document.createElement(tag);
@@ -267,7 +331,10 @@
         return;
       }
 
-      const candidates = tokiponize(raw, { limit: 5 });
+      const candidates = tokiponize(raw, {
+        limit: 5,
+        experimental: experimental.checked,
+      });
       if (!candidates.length) {
         output.append(el("div", "no-result", "ike a! nothing pronounceable came out of that."));
         return;
@@ -293,6 +360,7 @@
     }
 
     input.addEventListener("input", render);
+    experimental.addEventListener("change", render);
     render();
   </script>
 </body>
