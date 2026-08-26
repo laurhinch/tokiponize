@@ -11,6 +11,9 @@ import { tokiponize } from "../dist/index.js";
 import { prepareAtlas, renderCard } from "./og-card.mjs";
 
 const SITE = "https://nimi.toki.li";
+// bump when the card art changes: cached images live in Cloudflare and in
+// Discord, and neither of them will fetch the same URL twice
+const CARD = 2;
 const MAX_NAME = 60;
 const RATE_LIMIT = 120;
 const WINDOW_MS = 60_000;
@@ -30,15 +33,24 @@ function limited(ip) {
 }
 
 let atlasPromise = null;
+let atlasFetched = 0;
+const ATLAS_TTL = 15 * 60_000;
+
 function atlas() {
-  // drop a failed fetch, or one bad moment would poison this isolate
-  atlasPromise ??= fetch(`${SITE}/og-atlas.json`)
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
-    .then(prepareAtlas)
-    .catch((err) => {
-      atlasPromise = null;
-      throw err;
-    });
+  // re-read now and then: a new atlas ships with the site, not with this
+  // worker, so caching it forever means a fixed glyph never arrives
+  if (atlasPromise && Date.now() - atlasFetched > ATLAS_TTL) atlasPromise = null;
+  if (!atlasPromise) {
+    atlasFetched = Date.now();
+    // drop a failed fetch, or one bad moment would poison this isolate
+    atlasPromise = fetch(`${SITE}/og-atlas.json`, { cf: { cacheTtl: 60 } })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status))))
+      .then(prepareAtlas)
+      .catch((err) => {
+        atlasPromise = null;
+        throw err;
+      });
+  }
   return atlasPromise;
 }
 
@@ -77,7 +89,7 @@ function rewriteMeta(res, name, candidates) {
     ? `${name} in toki pona. Also ${others.join(", ")}.`
     : `${name} in toki pona.`;
   const url = `${SITE}/?nimi=${encodeURIComponent(name)}`;
-  const image = `${SITE}/og.png?nimi=${encodeURIComponent(name)}`;
+  const image = `${SITE}/og.png?nimi=${encodeURIComponent(name)}&v=${CARD}`;
 
   const set = (value) => ({
     element: (el) => el.setAttribute("content", value),
