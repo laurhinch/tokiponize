@@ -53,8 +53,8 @@ tool that can fetch a URL can use it. No key, CORS open, 60 requests a
 minute per IP.
 
 ```sh
-curl "https://nimi.toki.li/api/tokiponize?name=Marseille"
-# {"name":"Marseille","best":"Masi","candidates":[{"name":"Masi","score":-1.75}, ...]}
+curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
+# {"name":"Jakarta","best":"Jakata","candidates":[{"name":"Jakata","score":-1.2}, ...]}
 
 curl "https://nimi.toki.li/api/check?name=Koti"
 # {"name":"Koti","valid":false,"syllables":null}

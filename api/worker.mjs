@@ -62,7 +62,7 @@ export default {
     return json({
       error: "not found",
       endpoints: [
-        "GET /api/tokiponize?name=Marseille&limit=4&experimental=1",
+        "GET /api/tokiponize?name=Jakarta&limit=4&experimental=1",
         "GET /api/check?name=Koti",
       ],
     }, 404);
