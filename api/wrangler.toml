@@ -1,0 +1,11 @@
+name = "tokiponize"
+main = "worker.mjs"
+compatibility_date = "2026-08-01"
+
+# only these three paths reach the worker, so a bad deploy can't take the
+# rest of the site down with it
+routes = [
+  { pattern = "nimi.toki.li/", zone_name = "toki.li" },
+  { pattern = "nimi.toki.li/og.png", zone_name = "toki.li" },
+  { pattern = "nimi.toki.li/api/*", zone_name = "toki.li" },
+]

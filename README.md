@@ -46,6 +46,9 @@ tokiponize --check Koti
 Run `tokiponize --help` for the full flag list (`--limit`, `--best`, `--json`,
 `--check`, `--experimental`).
 
+Not using JavaScript? `curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"`
+returns the same candidates as JSON.
+
 ## How it works
 
 Names are tokiponized in two steps:
