@@ -125,6 +125,7 @@ const BEAM_WIDTH = 40;
 export const PEN = {
   dropConsonant: -1.9,
   dropCodaLiquid: -1.2,
+  initialDrop: -3,
   // drop the word's last consonant cheaper than a mid-cluster one
   finalDrop: -0.75,
   dropVowel: -1.75,
@@ -289,6 +290,10 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
         score: st.score +
           (next === undefined
             ? PEN.finalDrop
+            : !st.syls.length
+            // losing the sound a name starts with is worse than losing
+            // one in the middle (Christopher, not Witope)
+            ? PEN.initialDrop
             : codaLiquid
             ? PEN.dropCodaLiquid
             : PEN.dropConsonant),

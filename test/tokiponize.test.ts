@@ -312,6 +312,18 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(tokiponizeBest("이서연"), "Isojon"); // I Seo-yeon
   });
 
+  test("a name keeps the sound it starts with", () => {
+    for (const [name, initial] of [
+      ["Christopher", "K"],
+      ["Vladimir", "W"],
+      ["Stephanie", "S"],
+      ["Brooklyn", "P"],
+    ]) {
+      const got = tokiponizeBest(name!);
+      assert.ok(got.startsWith(initial!), `${name} -> ${got}`);
+    }
+  });
+
   test("each word of a name converts on its own", () => {
     assert.equal(tokiponizeBest("Anna Karenina"), "Ana Kawenina");
     // every word of every candidate stays a valid name on its own

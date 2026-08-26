@@ -60,6 +60,14 @@ all-caps initialisms (UK -> Juke):
 | rules | .408 | .506 | .518 | .482 |
 | hybrid | .408 | .545 | .574 | .426 |
 
+## initialDrop, a deliberate loss
+
+Cheaper consonant drops let word-initial sounds vanish: Christopher gave
+"Witope", Vladimir "Lasimi". PEN.initialDrop (-3) prices dropping a sound
+before anything has been emitted. Holdout top1 .408 -> .404, about seven
+entities, and worth it: the corpus is mostly place names, while people's
+names live or die on their first sound. A test pins the behavior.
+
 ## Conclusions
 
 - Baseline -> final: top1 .271 -> .328, dist .307 -> .275, all 45 tests green.
