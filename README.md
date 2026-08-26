@@ -70,6 +70,11 @@ actually uses. The rules still pick the top candidate; the model fills the
 rest of the list with forms the rules never produce (Suomi -> `Sumi`,
 English -> `Enli`). It may change between releases.
 
+**This is not an LLM or generative AI.** The "model" is a ~3KB table of
+letter-rewrite frequencies counted from real community examples, closer to
+a spell-checker's statistics than to a chatbot. There's no neural network,
+nothing runs remotely, and it can only ever output toki pona syllables.
+
 ## Accuracy
 
 Tested against ~4,900 real tokiponizations, taken from the
