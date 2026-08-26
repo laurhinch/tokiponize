@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>tokiponize</title>
+  <meta name="description" content="Turn any name into phonotactically valid toki pona, with scored alternatives." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Nunito:wght@400..900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --neo-cream: #f4ecdd;
+      --neo-red: #f28b6f;
+      --neo-teal: #7ccfbe;
+      --neo-yellow: #ffd98c;
+      --neo-black: #332e26;
+      --neo-white: #fffdf6;
+
+      --text-secondary: #57503f;
+      --text-muted: #6b6350;
+
+      --font-body: "Nunito", "Segoe UI", sans-serif;
+      --font-display: "Baloo 2", "Nunito", sans-serif;
+
+      --neo-border: 3px;
+      --shadow: 4px 4px 0 var(--neo-black);
+      --radius-card: 14px;
+      --radius-ui: 10px;
+
+      --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--neo-cream);
+      color: var(--neo-black);
+      font-family: var(--font-body);
+      font-weight: 600;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: var(--neo-yellow); color: var(--neo-black); }
+
+    main {
+      width: 100%;
+      max-width: 34rem;
+      padding: 3rem 1rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      flex: 1;
+    }
+
+    h1 {
+      align-self: flex-start;
+      background: var(--neo-yellow);
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-ui);
+      box-shadow: var(--shadow);
+      padding: 0.05em 0.55em 0.1em;
+      text-transform: uppercase;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.6rem;
+      transform: rotate(-1.2deg);
+      margin: 0;
+      transition: transform 0.25s var(--ease-spring);
+    }
+
+    h1:hover { transform: rotate(0.8deg) scale(1.02); }
+
+    .tagline {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--neo-white);
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    label {
+      font-family: var(--font-display);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.8rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      font-size: 1.15rem;
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-ui);
+      background: var(--neo-cream);
+      color: var(--neo-black);
+      font-family: inherit;
+      font-weight: 600;
+    }
+
+    input:focus { outline: 3px solid var(--neo-red); outline-offset: 0; }
+
+    input::placeholder { color: var(--text-muted); font-style: italic; font-weight: 500; }
+
+    .best {
+      background: var(--neo-teal);
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-ui);
+      padding: 1rem 1.25rem;
+      text-align: center;
+      animation: pop-in 0.35s var(--ease-spring);
+    }
+
+    .best-name {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 2.4rem;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .best-syls {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+    }
+
+    .alts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+    }
+
+    .alt {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.45em;
+      padding: 0.3em 0.75em;
+      background: var(--neo-cream);
+      border: 2px solid var(--neo-black);
+      border-radius: 999px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      animation: pop-in 0.35s var(--ease-spring);
+    }
+
+    .alt .score {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .hint {
+      margin: 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-style: italic;
+    }
+
+    .no-result {
+      background: var(--neo-red);
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-ui);
+      padding: 0.75rem 1rem;
+      text-align: center;
+      font-weight: 700;
+      animation: shake 0.35s ease-out;
+    }
+
+    footer {
+      padding: 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    footer a { color: inherit; font-weight: 700; }
+    footer a:hover { color: var(--neo-black); }
+
+    @keyframes pop-in {
+      0% { opacity: 0; transform: scale(0.96) translateY(8px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    @media (max-width: 639px) {
+      :root { --shadow: 2px 2px 0 var(--neo-black); }
+      .best-name { font-size: 1.9rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>tokiponize</h1>
+    <p class="tagline">
+      Turn any name into phonotactically valid toki pona.
+      Type a name and get the best fit plus scored alternatives.
+    </p>
+
+    <div class="card">
+      <label for="name">nimi · name</label>
+      <input id="name" type="text" placeholder="Christopher, Marseille, København…"
+             autocomplete="off" autocapitalize="off" spellcheck="false" autofocus />
+      <div id="output">
+        <p class="hint">o sitelen e nimi!</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <a href="https://github.com/laurhinch/tokiponize">GitHub</a> ·
+    <a href="https://www.npmjs.com/package/tokiponize">npm</a> ·
+    made by <a href="https://github.com/laurhinch">jan Lolin</a>
+  </footer>
+
+  <script type="module">
+    import { tokiponize, syllabify } from "./lib/index.js";
+
+    const input = document.getElementById("name");
+    const output = document.getElementById("output");
+
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function render() {
+      const raw = input.value.trim();
+      output.replaceChildren();
+
+      if (!raw) {
+        output.append(el("p", "hint", "o sitelen e nimi!"));
+        return;
+      }
+
+      const candidates = tokiponize(raw, { limit: 5 });
+      if (!candidates.length) {
+        output.append(el("div", "no-result", "ike a! nothing pronounceable came out of that."));
+        return;
+      }
+
+      const [best, ...alts] = candidates;
+      const bestBox = el("div", "best");
+      bestBox.append(el("div", "best-name", best.name));
+      const syls = syllabify(best.name);
+      if (syls) bestBox.append(el("div", "best-syls", syls.join(" · ")));
+      output.append(bestBox);
+
+      if (alts.length) {
+        const row = el("div", "alts");
+        row.style.marginTop = "0.75rem";
+        for (const alt of alts) {
+          const chip = el("span", "alt", alt.name);
+          chip.append(" ", el("span", "score", String(alt.score)));
+          row.append(chip);
+        }
+        output.append(row);
+      }
+    }
+
+    input.addEventListener("input", render);
+    render();
+  </script>
+</body>
+</html>
