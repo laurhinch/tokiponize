@@ -219,20 +219,24 @@
         transition-duration: 0.01ms !important;
       }
     }
-    .toggle-row {
+    .engine-row {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
       gap: 0.5rem;
       margin-top: 0.75rem;
       font-size: 0.85rem;
       color: var(--text-secondary);
     }
 
-    .toggle-row input {
-      width: 1.1rem;
-      height: 1.1rem;
-      accent-color: var(--neo-red);
-      box-shadow: none;
+    .engine-row select {
+      font: 700 0.85rem var(--font-body);
+      color: var(--neo-black);
+      background: var(--neo-white);
+      border: var(--neo-border) solid var(--neo-black);
+      border-radius: var(--radius-ui);
+      padding: 0.3rem 0.5rem;
+      cursor: pointer;
     }
 
     h2 {
@@ -276,14 +280,13 @@
       <div id="output">
         <p class="hint">o sitelen e nimi!</p>
       </div>
-      <label class="toggle-row">
-        <input id="experimental" type="checkbox" />
-        experimental: add suggestions learned from community usage
+      <label class="engine-row">
+        nasin
+        <select id="engine">
+          <option value="rules">standard</option>
+          <option value="experimental">experimental</option>
+        </select>
       </label>
-      <p class="hint" style="font-size: 0.8rem; margin: 0.25rem 0 0;">
-        not an LLM, not generative AI: a ~3KB table of letter statistics
-        counted from real tokiponizations, running entirely in your browser
-      </p>
     </div>
 
     <div class="card">
@@ -317,7 +320,7 @@
 
     const input = document.getElementById("name");
     const output = document.getElementById("output");
-    const experimental = document.getElementById("experimental");
+    const engine = document.getElementById("engine");
 
     function el(tag, className, text) {
       const node = document.createElement(tag);
@@ -337,7 +340,7 @@
 
       const candidates = tokiponize(raw, {
         limit: 5,
-        experimental: experimental.checked,
+        experimental: engine.value === "experimental",
       });
       if (!candidates.length) {
         output.append(el("div", "no-result", "ike a! nothing pronounceable came out of that."));
@@ -364,7 +367,7 @@
     }
 
     input.addEventListener("input", render);
-    experimental.addEventListener("change", render);
+    engine.addEventListener("change", render);
     render();
   </script>
 </body>
