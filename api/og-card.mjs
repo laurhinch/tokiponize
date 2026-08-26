@@ -159,26 +159,58 @@ export async function renderCard(atlas, source, result) {
   const big = atlas.big;
 
   const clean = [...source].filter((c) => small.glyphs[c]).join("");
-  if (clean && clean.length >= source.length * 0.7) {
-    const w = measure(small, clean);
-    drawText(buf, small, clean, (W - w) / 2, 196, MUTED);
-  }
+  const showSource = clean && clean.length >= source.length * 0.7;
 
   let scale = 1;
-  let tw = measure(big, result);
-  const maxText = 880;
-  if (tw > maxText) {
-    scale = maxText / tw;
-    tw = maxText;
+  const maxText = 900;
+  const words = result.split(" ");
+  let lines = [result];
+  scale = Math.min(1, maxText / measure(big, result));
+
+  // a long name reads better broken over two lines than shrunk to nothing
+  if (scale < 0.85 && words.length > 1) {
+    let best = null;
+    for (let cut = 1; cut < words.length; cut++) {
+      const pair = [words.slice(0, cut).join(" "), words.slice(cut).join(" ")];
+      const widest = Math.max(...pair.map((l) => measure(big, l)));
+      if (!best || widest < best.widest) best = { pair, widest };
+    }
+    const twoLine = Math.min(1, maxText / best.widest);
+    if (twoLine > scale) {
+      lines = best.pair;
+      scale = twoLine;
+    }
   }
-  const boxW = Math.min(W - 140, tw + 120);
-  const boxH = 190;
+
+  const asc = big.size * scale * 0.76;
+  const desc = big.size * scale * 0.24;
+  const lineH = asc + desc + big.size * scale * 0.1;
+  const padY = 46;
+  const widest = Math.max(...lines.map((l) => measure(big, l) * scale));
+  const boxW = Math.min(W - 140, Math.round(widest) + 120);
+  const boxH = Math.round(padY * 2 + asc + desc + (lines.length - 1) * lineH);
   const boxX = Math.round((W - boxW) / 2);
-  const boxY = 250;
-  roundRect(buf, boxX + 10, boxY + 10, boxW, boxH, 30, BLACK);
-  roundRect(buf, boxX, boxY, boxW, boxH, 30, BLACK);
-  roundRect(buf, boxX + 8, boxY + 8, boxW - 16, boxH - 16, 24, TEAL);
-  drawText(buf, big, result, (W - tw) / 2, boxY + 128, BLACK, scale);
+  // stack the source line and the box, then centre the pair, so a tall box
+  // never grows up into the text above it
+  const sourceH = showSource ? small.size : 0;
+  const gap = showSource ? 40 : 0;
+  const top = Math.round((H - 120 - (sourceH + gap + boxH)) / 2);
+  const boxY = top + sourceH + gap;
+  const radius = Math.min(30, Math.round(boxH / 4));
+
+  if (showSource) {
+    const sw = measure(small, clean);
+    drawText(buf, small, clean, (W - sw) / 2, top + small.size * 0.76, MUTED);
+  }
+
+  roundRect(buf, boxX + 10, boxY + 10, boxW, boxH, radius, BLACK);
+  roundRect(buf, boxX, boxY, boxW, boxH, radius, BLACK);
+  roundRect(buf, boxX + 8, boxY + 8, boxW - 16, boxH - 16, radius - 6, TEAL);
+
+  lines.forEach((line, i) => {
+    const lw = measure(big, line) * scale;
+    drawText(buf, big, line, (W - lw) / 2, boxY + padY + asc + i * lineH, BLACK, scale);
+  });
 
   const domain = "nimi.toki.li";
   drawText(buf, small, domain, W - 84 - measure(small, domain), 556, MUTED);
