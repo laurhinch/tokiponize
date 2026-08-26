@@ -10,6 +10,10 @@ import { capWords, splitWords, usableLabel } from "./lib.mjs";
 
 const file = join(dirname(fileURLToPath(import.meta.url)), "data", "wikidata-tok.jsonl");
 const rows = readFileSync(file, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+if (rows.length < 1000) {
+  console.error(`only ${rows.length} rows, refusing to overwrite (bad harvest?)`);
+  process.exit(1);
+}
 
 const dropped = { noName: 0, invalidAttested: 0, labels: 0, noLabels: 0 };
 const kept = [];

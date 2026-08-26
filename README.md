@@ -82,8 +82,8 @@ tuned on:
 
 | engine | top-1 | top-4 | top-8 | not generated |
 |--------|-------|-------|-------|---------------|
-| rules (default) | 37.9% | 44.2% | 44.6% | 55.4% |
-| `--experimental` | 37.9% | 49.3% | 52.6% | 47.4% |
+| rules (default) | 40.0% | 46.6% | 47.0% | 53.0% |
+| `--experimental` | 40.0% | 52.7% | 55.2% | 44.8% |
 
 The gap to 100% is mostly names derived from endonyms or pronunciations no
 written label provides (Japan -> `Nijon` needs "Nihon"): give it the source

@@ -43,6 +43,14 @@ train-model.mjs learns substring rewrite costs from 2,918 aligned pairs
 | model only | .364 | .476 | | .486 |
 | hybrid (shipped) | .379 | .493 | .526 | .474 |
 
+After the data expansion (49 label languages, aliases in 9 languages,
+37.9k aliases, 4,879 clean entities):
+
+| engine | top1 | top4 | top8 | unreachable |
+|--------|------|------|------|-------------|
+| rules | .400 | .466 | .470 | .530 |
+| hybrid | .400 | .527 | .552 | .448 |
+
 ## Conclusions
 
 - Baseline -> final: top1 .271 -> .328, dist .307 -> .275, all 45 tests green.

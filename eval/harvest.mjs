@@ -13,24 +13,31 @@ const LANGS = [
   "en", "mul", "de", "fr", "es", "it", "pt", "nl", "pl", "cs", "sv", "fi",
   "tr", "eo", "la", "id", "vi", "ru", "uk", "el", "ja", "ko", "zh", "ar",
   "fa", "he", "hi",
+  "hu", "ro", "da", "nb", "is", "et", "lv", "lt", "hr", "sk", "sl", "bg",
+  "sr", "az", "sw", "tl", "ceb", "ms", "ca", "gl", "eu", "sq",
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function api(params) {
   const url = `${API}?${new URLSearchParams({ ...params, format: "json" })}`;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 6; attempt++) {
     try {
       const res = await fetch(url, { headers: { "User-Agent": UA } });
-      if (res.ok) return await res.json();
-      if (res.status !== 429 && res.status < 500) {
+      if (res.ok) {
+        const data = await res.json();
+        // rate limiting can arrive as an error body with HTTP 200
+        if (!data.error) return data;
+        process.stderr.write(`\napi error: ${data.error.code}, retrying\n`);
+      } else if (res.status !== 429 && res.status < 500) {
         throw new Error(`HTTP ${res.status} for ${url}`);
       }
     } catch (err) {
-      if (attempt === 4) throw err;
+      if (attempt === 5) throw err;
     }
-    await sleep(1000 * (attempt + 1));
+    await sleep(3000 * (attempt + 1));
   }
+  throw new Error(`gave up on ${url}`);
 }
 
 async function collectIds() {
@@ -85,6 +92,7 @@ async function fetchLabels(ids) {
 }
 
 const ids = await collectIds();
+if (ids.length < 1000) throw new Error(`only ${ids.length} ids, aborting`);
 const rows = await fetchLabels(ids);
 
 const outDir = join(dirname(fileURLToPath(import.meta.url)), "data");
