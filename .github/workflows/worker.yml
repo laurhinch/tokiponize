@@ -52,11 +52,16 @@ jobs:
       # before the deploy, so the table is never younger than the worker
       # writing to it. D1 records what it has run, so this is a no-op once
       # every migration has been applied.
+      #
+      # Both wrangler steps pin a version. wrangler-action bundles its own,
+      # currently 3.90.0, which is older than this config and exits 1 here
+      # without printing a reason.
       - name: Apply D1 migrations
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.126.0"
           command: >-
             d1 migrations apply tokiponize-suggestions --remote
             --config api/wrangler.toml
@@ -66,6 +71,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.126.0"
           command: deploy --config api/wrangler.toml
 
       # a broken worker still serves the site, so it needs saying out loud
