@@ -579,11 +579,36 @@ for (const [k, v] of Object.entries({ ...SMALL_VOWEL })) {
   SMALL_VOWEL[String.fromCodePoint(k.codePointAt(0)! + 0x60)] = v;
 }
 
+/**
+ * Japanese writes a long vowel as a second vowel (とうきょう) or a bar
+ * (シャーロット). toki pona has no vowel length, so the extra one goes.
+ */
+function isLengthener(kana: string, lastVowel: string): boolean {
+  if (kana === "ー") return lastVowel !== "";
+  const entry = KANA_TOKENS[kana];
+  if (!entry || entry.length !== 1) return false;
+  const v = entry[0]!;
+  if (!"aeiou".includes(v)) return false;
+  return v === lastVowel || (v === "u" && lastVowel === "o");
+}
+
 function kanaTokens(raw: string): string[] {
   const chars = Array.from(raw);
   const tokens: string[] = [];
+  let lastVowel = "";
+  const push = (...added: string[]) => {
+    for (const t of added) {
+      tokens.push(t);
+      if ("aeiou".includes(t)) lastVowel = t;
+      else if (t) lastVowel = "";
+    }
+  };
   let i = 0;
   while (i < chars.length) {
+    if (isLengthener(chars[i]!, lastVowel)) {
+      i += 1;
+      continue;
+    }
     const entry = KANA_TOKENS[chars[i]!];
     if (!entry) {
       i += 1;
@@ -592,12 +617,16 @@ function kanaTokens(raw: string): string[] {
     const next = chars[i + 1];
     if (next && entry.length === 2) {
       if (SMALL_YOON[next] !== undefined) {
-        tokens.push(entry[0]!, "j", SMALL_YOON[next]!);
+        // きゃ is kya, but しゃ is just sha: the sh/ch/j rows swallow the
+        // glide instead of taking one
+        const palatal = ["sh", "ch", "z"].includes(entry[0]!);
+        if (palatal) push(entry[0]!, SMALL_YOON[next]!);
+        else push(entry[0]!, "j", SMALL_YOON[next]!);
         i += 2;
         continue;
       }
       if (SMALL_VOWEL[next] !== undefined) {
-        tokens.push(entry[0]!, SMALL_VOWEL[next]!);
+        push(entry[0]!, SMALL_VOWEL[next]!);
         i += 2;
         continue;
       }
@@ -606,11 +635,11 @@ function kanaTokens(raw: string): string[] {
       next && entry.length === 1 && entry[0] === "u" &&
       SMALL_VOWEL[next] !== undefined
     ) {
-      tokens.push("w", SMALL_VOWEL[next]!);
+      push("w", SMALL_VOWEL[next]!);
       i += 2;
       continue;
     }
-    tokens.push(...entry);
+    push(...entry);
     i += 1;
   }
   return tokens;

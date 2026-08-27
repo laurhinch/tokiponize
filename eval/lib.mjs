@@ -197,3 +197,68 @@ export function evaluateRows(rows, { samples = false } = {}) {
   delete summary.distSum;
   return { summary, notTop1, unreachable };
 }
+
+const SCRIPT_RANGES = [
+  ["latin", 0x41, 0x24f],
+  ["greek", 0x370, 0x3ff],
+  ["cyrillic", 0x400, 0x52f],
+  ["devanagari", 0x900, 0x97f],
+  ["kana", 0x3040, 0x30ff],
+  ["han", 0x4e00, 0x9fff],
+  ["hangul", 0xac00, 0xd7a3],
+];
+
+/** the script most of a label is written in */
+export function scriptOf(text) {
+  const counts = {};
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    const hit = SCRIPT_RANGES.find(([, lo, hi]) => cp >= lo && cp <= hi);
+    if (hit) counts[hit[0]] = (counts[hit[0]] ?? 0) + 1;
+  }
+  let best = null;
+  for (const [name, n] of Object.entries(counts)) {
+    if (!best || n > best[1]) best = [name, n];
+  }
+  return best?.[0] ?? "other";
+}
+
+/**
+ * Same scoring, but grouped by the script the source is written in rather
+ * than best-label-wins, so one bad reader cannot hide behind the others.
+ */
+export function scriptBreakdown(rows) {
+  const by = {};
+  for (const row of rows) {
+    const attWords = capWords(row.tok);
+    if (!attWords.length || !attWords.every((w) => isValidName(w))) continue;
+    const seen = new Set();
+    for (const label of Object.values(row.labels)) {
+      if (seen.has(label)) continue;
+      seen.add(label);
+      const s = scoreLabel(label, attWords);
+      if (!s) continue;
+      const script = scriptOf(label);
+      const b = (by[script] ??= { pairs: 0, top1: 0, top4: 0, unreachable: 0 });
+      b.pairs++;
+      if (s.worst === 0) b.top1++;
+      else if (s.worst > 0 && s.worst < 4) b.top4++;
+      else if (s.worst === -1) b.unreachable++;
+    }
+  }
+  const out = {};
+  for (const [script, b] of Object.entries(by)) {
+    if (b.pairs < 30) continue;
+    // most labels are simply a different name (every language has its own
+    // word for Germany), so the honest question is: when this label IS the
+    // source the community used, do we rank its reading first?
+    const usable = b.pairs - b.unreachable;
+    out[script] = {
+      labels: b.pairs,
+      onSource: usable,
+      ranked1st: +(b.top1 / (usable || 1)).toFixed(3),
+      top4: +((b.top1 + b.top4) / (usable || 1)).toFixed(3),
+    };
+  }
+  return out;
+}

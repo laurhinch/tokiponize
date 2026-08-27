@@ -81,3 +81,26 @@ names live or die on their first sound. A test pins the behavior.
   - genuine rule gaps left: community-inconsistent -ija clipping
     (Losi vs Italija), heavy clipping (Deutsch -> Tosi), vowel quality
     (English -> Inli needs e -> i).
+
+## Per-script reading quality
+
+`evaluate.mjs` now breaks results down by the script the source is written
+in. Counted only over labels that can reach the attested form at all, so
+the number answers "when this label is the source the community used, do we
+rank its reading first?" rather than punishing a language for having its
+own word for Germany.
+
+| script | labels | on source | ranked 1st | top4 |
+|--------|--------|-----------|-----------|------|
+| latin | 65198 | 13279 | .603 | .961 |
+| devanagari | 2399 | 553 | .743 | .982 |
+| greek | 2636 | 676 | .754 | .976 |
+| cyrillic | 12015 | 2746 | .782 | .974 |
+| hangul | 3005 | 503 | .783 | .976 |
+| han | 53 | 12 | .833 | .917 |
+| kana | 3977 | 878 | .875 | .987 |
+
+Latin trails everything, which fits: it is the only script here where the
+spelling does not tell you the sounds. Greek sat at the bottom before the
+digraph fix; a stranger reported that, not this harness, which is why the
+breakdown exists now.

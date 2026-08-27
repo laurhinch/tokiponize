@@ -368,6 +368,17 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.equal(toPhonemes("मुंबई"), "munpai");
   });
 
+  test("kana long vowels collapse, and sh/ch/j take no glide", () => {
+    // toki pona has no vowel length, so the second vowel goes
+    assert.equal(toPhonemes("とうきょう"), "tokjo"); // Tokyo
+    assert.equal(toPhonemes("おおさか"), "osaka"); // Osaka
+    assert.equal(toPhonemes("ラーメン"), "lamen"); // the bar lengthens too
+    // しゃ is sha, not s + y + a, but きゃ really is kya
+    assert.equal(toPhonemes("シャーロット"), "saloto"); // Charlotte
+    assert.equal(toPhonemes("きゃく"), "kjaku");
+    assert.equal(tokiponizeBest("ジョン"), "Son"); // John
+  });
+
   test("kana map cleanly since each character is already one CV syllable", () => {
     assert.equal(tokiponizeBest("さくら"), "Sakula"); // hiragana: Sakura
     assert.equal(tokiponizeBest("アリス"), "Alisu"); // katakana: Alice
