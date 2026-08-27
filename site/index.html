@@ -419,6 +419,215 @@
             outline: 3px solid var(--neo-red);
         }
 
+        .fix {
+            border-top: 2px dashed var(--neo-black);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+        }
+
+        .fix[hidden] {
+            display: none;
+        }
+
+        .fix summary {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .fix summary:hover {
+            color: var(--neo-black);
+        }
+
+        .fix-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .fix-body input {
+            font-size: 1rem;
+            padding: 0.5rem 0.7rem;
+        }
+
+        .fix-send {
+            align-self: flex-start;
+            font: 800 0.85rem var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--neo-black);
+            background: var(--neo-yellow);
+            border: var(--neo-border) solid var(--neo-black);
+            border-radius: var(--radius-ui);
+            box-shadow: 2px 2px 0 var(--neo-black);
+            padding: 0.4rem 0.9rem;
+            cursor: pointer;
+            transition: transform 0.15s var(--ease-spring);
+        }
+
+        .fix-send:hover {
+            transform: translate(-1px, -1px);
+        }
+
+        .fix-send:disabled {
+            opacity: 0.5;
+            cursor: progress;
+            transform: none;
+        }
+
+        .card .fix-say {
+            margin: 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            min-height: 1.2em;
+        }
+
+        .card .fix-say.bad {
+            color: #b3462a;
+        }
+
+        .fix .fix-note-why {
+            margin: 0;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .help[hidden] {
+            display: none;
+        }
+
+        .help-name {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.6rem;
+            line-height: 1.15;
+            overflow-wrap: anywhere;
+        }
+
+        .help-ours {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .help-ours b {
+            font-family: var(--font-display);
+            color: var(--neo-black);
+        }
+
+        .help-ask[hidden] {
+            display: none;
+        }
+
+        .help-ask {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .help-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .help-filed {
+            background: var(--neo-yellow);
+            border: var(--neo-border) solid var(--neo-black);
+            border-radius: var(--radius-ui);
+            padding: 0.75rem 1rem;
+            animation: pop-in 0.35s var(--ease-spring);
+        }
+
+        .help-filed-name {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+
+        .help .fix-note-why,
+        .help .help-note {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .help .help-note {
+            font-style: italic;
+        }
+
+        .help .help-done {
+            margin: 0;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .help .help-done.bad {
+            color: #b3462a;
+        }
+
+        .help-row[hidden],
+        .help-done[hidden] {
+            display: none;
+        }
+
+        .help-tally {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .help-btn {
+            font: 800 0.85rem var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--neo-black);
+            background: var(--neo-white);
+            border: var(--neo-border) solid var(--neo-black);
+            border-radius: var(--radius-ui);
+            box-shadow: 2px 2px 0 var(--neo-black);
+            padding: 0.4rem 0.9rem;
+            cursor: pointer;
+            transition: transform 0.15s var(--ease-spring);
+        }
+
+        .help-btn:hover {
+            transform: translate(-1px, -1px);
+        }
+
+        .help-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+            transform: none;
+        }
+
+        .help-btn.yes {
+            background: var(--neo-teal);
+        }
+
+        .help-btn.no {
+            background: var(--neo-red);
+        }
+
+        .help-quiet {
+            background: none;
+            border: 0;
+            box-shadow: none;
+            padding: 0.4rem 0;
+            font: 700 0.8rem var(--font-body);
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text-muted);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
         .top-row {
             display: flex;
             flex-wrap: wrap;
@@ -493,20 +702,32 @@
                 <p class="hint">o sitelen e nimi!</p>
             </div>
             <label class="engine-row">
-                nasin
+                <span data-i18n="engineLabel">nasin · method</span>
                 <select id="engine">
                     <option value="rules" data-i18n="engineStd">standard</option>
                     <option value="experimental" data-i18n="engineExp">experimental</option>
                 </select>
             </label>
+
+            <details class="fix" id="fix" hidden>
+                <summary data-i18n="fixSummary">ni li ike? · would you do it differently?</summary>
+                <div class="fix-body">
+                    <label for="fix-name" data-i18n="fixLabel">nimi sina · your tokiponization</label>
+                    <input id="fix-name" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+                        maxlength="60" placeholder="tokiponization" />
+                    <input id="fix-note" type="text" autocomplete="off" maxlength="280"
+                        data-i18n-placeholder="fixNotePlaceholder" placeholder="why? (optional)" />
+                    <p class="fix-say" id="fix-say" aria-live="polite"></p>
+                    <button type="button" class="fix-send" id="fix-send" data-i18n="fixSend">o pana · send</button>
+                </div>
+            </details>
         </div>
 
         <div class="card">
             <h2 data-i18n="statsHead">ilo ni li pona ala pona? · how good is it?</h2>
             <p data-i18n-html="statsIntro">
                 Tested on ~4,900 real tokiponizations from
-                <a href="https://www.wikidata.org/">Wikidata</a>'s toki pona labels,
-                using only names the tool was never tuned on:
+                <a href="https://www.wikidata.org/">Wikidata</a>'s toki pona labels.
             </p>
             <table class="stats-table">
                 <tr>
@@ -517,15 +738,15 @@
                 </tr>
                 <tr>
                     <td data-i18n="engineStd">standard</td>
-                    <td>41%</td>
-                    <td>51%</td>
-                    <td>52%</td>
+                    <td>45%</td>
+                    <td>58%</td>
+                    <td>59%</td>
                 </tr>
                 <tr>
                     <td data-i18n="engineExp">experimental</td>
-                    <td>41%</td>
-                    <td>54%</td>
-                    <td>57%</td>
+                    <td>45%</td>
+                    <td>59%</td>
+                    <td>62%</td>
                 </tr>
             </table>
             <p data-i18n-html="statsNote">
@@ -533,6 +754,48 @@
                 spelling alone doesn't show. Details and data live in
                 <a href="https://github.com/laurhinch/tokiponize/tree/main/eval">eval/</a>.
             </p>
+        </div>
+
+        <div class="card help" id="help" hidden>
+            <h2 data-i18n="helpHead">o pona e sona! · help with the data</h2>
+            <p data-i18n="helpIntro" id="help-intro">
+                Someone thought the tool read this name wrong. How would you
+                write it? Answer first, then see what they said.
+            </p>
+
+            <div class="help-name" id="help-name"></div>
+            <p class="help-ours" id="help-ours"></p>
+
+            <div class="help-ask" id="help-ask">
+                <label for="help-input" data-i18n="fixLabel">nimi sina · your reading</label>
+                <input id="help-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+                    maxlength="60" />
+                <p class="fix-say" id="help-say" aria-live="polite"></p>
+                <div class="help-row">
+                    <button type="button" class="help-btn" id="help-send" data-i18n="fixSend">o pana · send</button>
+                    <button type="button" class="help-btn help-quiet" id="help-skip" data-i18n="helpSkip">just show
+                        me</button>
+                </div>
+            </div>
+
+            <div class="help-filed" id="help-filed" hidden>
+                <p class="fix-note-why" data-i18n="helpFiled">they would write it</p>
+                <div class="help-filed-name" id="help-filed-name"></div>
+                <p class="help-note" id="help-filed-note"></p>
+                <div class="help-row">
+                    <button type="button" class="help-btn yes" id="help-up" data-i18n="helpAgree">li pona ·
+                        agree</button>
+                    <button type="button" class="help-btn no" id="help-down" data-i18n="helpDisagree">li ike ·
+                        disagree</button>
+                    <span class="help-tally" id="help-tally"></span>
+                </div>
+            </div>
+
+            <p class="help-done" id="help-done" hidden></p>
+
+            <div class="help-row" id="help-more">
+                <button type="button" class="help-btn help-quiet" id="help-next" data-i18n="helpNext">next name</button>
+            </div>
         </div>
     </main>
 
@@ -565,19 +828,53 @@
     </footer>
 
     <script type="module">
-        import {tokiponize, syllabify} from "./lib/index.js";
+        import {tokiponize, syllabify, isValidName} from "./lib/index.js";
 
         const input = document.getElementById("name");
         const output = document.getElementById("output");
         const engine = document.getElementById("engine");
         const langSelect = document.getElementById("lang");
+        const fix = document.getElementById("fix");
+        const fixName = document.getElementById("fix-name");
+        const fixNote = document.getElementById("fix-note");
+        const fixSay = document.getElementById("fix-say");
+        const fixSend = document.getElementById("fix-send");
+        const help = document.getElementById("help");
+        const helpEl = {
+            name: document.getElementById("help-name"),
+            ours: document.getElementById("help-ours"),
+            ask: document.getElementById("help-ask"),
+            input: document.getElementById("help-input"),
+            say: document.getElementById("help-say"),
+            send: document.getElementById("help-send"),
+            skip: document.getElementById("help-skip"),
+            filed: document.getElementById("help-filed"),
+            filedName: document.getElementById("help-filed-name"),
+            filedNote: document.getElementById("help-filed-note"),
+            up: document.getElementById("help-up"),
+            down: document.getElementById("help-down"),
+            tally: document.getElementById("help-tally"),
+            next: document.getElementById("help-next"),
+            more: document.getElementById("help-more"),
+            done: document.getElementById("help-done"),
+            intro: document.getElementById("help-intro"),
+        };
+
+        // same origin in production. the site also runs on Pages, where the
+        // worker routes do not exist, and locally, where wrangler dev holds
+        // them on 8787 and a stray test cannot reach the real table
+        const local = ["localhost", "127.0.0.1"].includes(location.hostname);
+        const API = local
+            ? "http://localhost:8787"
+            : location.hostname === "nimi.toki.li" ? "" : "https://nimi.toki.li";
 
         const STRINGS = {
             en: {
                 tagline: "Turn any name into phonotactically valid toki pona. " +
                     "Type a name and get the best fit plus scored alternatives.",
                 nameLabel: "nimi · name",
-                hint: "o sitelen e nimi!",
+                engineLabel: "nasin · method",
+                hint: "o sitelen e nimi! · type a name!",
                 noResult: "ike a! nothing pronounceable came out of that.",
                 engineStd: "standard",
                 engineExp: "experimental",
@@ -595,11 +892,33 @@
                     "itself. Details and data " +
                     "can be found in <a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>eval/</a>.",
                 credit: "made by <a href='https://github.com/laurhinch'>jan Lolin</a>",
+                fixSummary: "ni li ike? · would you read it differently?",
+                fixLabel: "nimi sina · your reading",
+                fixNotePlaceholder: "why? (optional)",
+                fixSend: "o pana · send",
+                fixThanks: "pona a! that one is filed.",
+                fixInvalid: "that one can't be said in toki pona.",
+                fixSame: "that is already the top pick!",
+                fixFailed: "that didn't send. try again later?",
+                helpHead: "o pona e sona! · help with the data",
+                helpIntro: "Someone thought the tool read this name wrong. " +
+                    "How would you write it? Answer first, then see what they said.",
+                helpOurs: "the tool says %s",
+                helpSkip: "just show me",
+                helpFiled: "they would write it",
+                helpAgree: "li pona · agree",
+                helpDisagree: "li ike · disagree",
+                helpNext: "next name",
+                helpVoted: "counted, pona!",
+                helpEmpty: "nothing needs a second opinion right now. pona!",
+                helpRun: "that is all of them for now. you read %s. pona a!",
+                helpThanks: "pona a! now, here is what they said.",
             },
             tok: {
                 tagline: "ilo ni li ante e nimi tawa toki pona. " +
                     "sina sitelen e nimi la ilo li pana e nimi pona mute.",
                 nameLabel: "nimi",
+                engineLabel: "nasin",
                 hint: "o sitelen e nimi!",
                 noResult: "ike a! mi ken ala pali e nimi pona tan ni.",
                 engineStd: "pona",
@@ -619,11 +938,35 @@
                     "taso li ken ala pana e kalama ni. sona mute li lon " +
                     "<a href='https://github.com/laurhinch/tokiponize/tree/main/eval'>lipu eval</a>.",
                 credit: "<a href='https://github.com/laurhinch'>jan Lolin</a> li pali e ni",
+                fixSummary: "sina toki ante anu seme?",
+                fixLabel: "nimi sina",
+                fixNotePlaceholder: "tan seme? (wile ala la sina ken ala sitelen e ni)",
+                fixSend: "o pana",
+                fixThanks: "pona a! mi kama jo e nimi sina.",
+                fixInvalid: "toki pona la sina ken ala toki e nimi ni.",
+                fixSame: "ni li nimi nanpa wan a!",
+                fixFailed: "pakala a! o pana sin lon tenpo kama.",
+                helpHead: "o pona e sona!",
+                helpIntro: "jan li toki e ni: ilo li pakala lon nimi ni. " +
+                    "sina la nimi ni li seme? o toki e nimi sina. ni la sina " +
+                    "ken lukin e nimi pi jan ante.",
+                helpOurs: "ilo li toki e %s",
+                helpSkip: "o pana taso e nimi pi jan ante",
+                helpFiled: "jan ante la nimi li ni",
+                helpAgree: "li pona",
+                helpDisagree: "li ike",
+                helpNext: "nimi kama",
+                helpVoted: "pona! mi sona e toki sina.",
+                helpEmpty: "nimi ala li wile e lukin sin. pona!",
+                helpRun: "nimi ale li pini. sina pali e nimi %s. pona a!",
+                helpThanks: "pona a! nimi pi jan ante li ni.",
             },
 
         };
 
         let lang = "en";
+        // the name the correction box is currently about
+        let fixFor = null;
         const t = (key) => STRINGS[lang][key];
 
         function applyLang() {
@@ -635,6 +978,10 @@
             for (const node of document.querySelectorAll("[data-i18n-html]")) {
                 node.innerHTML = t(node.dataset.i18nHtml);
             }
+            for (const node of document.querySelectorAll("[data-i18n-placeholder]")) {
+                node.placeholder = t(node.dataset.i18nPlaceholder);
+            }
+            paintItem();
             render();
         }
 
@@ -694,7 +1041,16 @@
             syncUrl(raw);
             output.replaceChildren();
 
+            if (raw !== fixFor) {
+                fixFor = raw;
+                fix.open = false;
+                fixName.value = "";
+                fixSay.textContent = "";
+                fixSay.classList.remove("bad");
+            }
+
             if (!raw) {
+                fix.hidden = true;
                 output.append(el("p", "hint", t("hint")));
                 return;
             }
@@ -704,9 +1060,11 @@
                 experimental: engine.value === "experimental",
             });
             if (!candidates.length) {
+                fix.hidden = true;
                 output.append(el("div", "no-result", t("noResult")));
                 return;
             }
+            fix.hidden = false;
 
             const [best, ...alts] = candidates;
             const bestBox = el("div", "best");
@@ -744,6 +1102,278 @@
             }
         }
 
+        // A reading someone would rather have had. The name it belongs to is
+        // read fresh from the input, so what gets filed is always the pair on
+        // screen. Invalid syllables are caught here as well as in the worker:
+        // the point is to say so before anything is sent.
+        async function sendFix() {
+            const source = input.value.trim();
+            const suggestion = fixName.value.trim().replace(/\s+/g, " ");
+            if (!source || !suggestion) return;
+            fixSay.classList.remove("bad");
+            if (!suggestion.split(" ").every(isValidName)) {
+                fixSay.textContent = t("fixInvalid");
+                fixSay.classList.add("bad");
+                return;
+            }
+            fixSay.textContent = "";
+            fixSend.disabled = true;
+            try {
+                const res = await fetch(`${API}/api/suggest`, {
+                    method: "POST",
+                    headers: {"content-type": "application/json"},
+                    body: JSON.stringify({
+                        name: source,
+                        suggestion,
+                        engine: engine.value,
+                        note: fixNote.value.trim(),
+                    }),
+                });
+                if (res.ok) {
+                    fixSay.textContent = t("fixThanks");
+                    fixName.value = "";
+                    fixNote.value = "";
+                    const {id} = await res.json().catch(() => ({}));
+                    memory.names.add(source);
+                    if (Number.isInteger(id)) seen.add(id);
+                    remember();
+                } else {
+                    fixSay.textContent = t(
+                        res.status === 409 ? "fixSame"
+                            : res.status === 422 ? "fixInvalid"
+                                : "fixFailed",
+                    );
+                    fixSay.classList.add("bad");
+                }
+            } catch {
+                fixSay.textContent = t("fixFailed");
+                fixSay.classList.add("bad");
+            }
+            fixSend.disabled = false;
+        }
+
+        fixSend.addEventListener("click", sendFix);
+        fixName.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendFix();
+        });
+
+        // The queue: names somebody else flagged. Your own reading is asked
+        // for before the filed one is shown, because an answer given blind is
+        // worth more than a vote on an answer you have already read.
+        // What this browser has already dealt with, kept in this browser.
+        // Row ids go back to the server so it can leave them out of the next
+        // batch; the names never do. Names people put into the tool are their
+        // own business, and a list of them in a query string would not be.
+        const MEMORY = "tokiponize.queue";
+        const LIMIT = {ids: 500, names: 100};
+
+        function recall() {
+            try {
+                const held = JSON.parse(localStorage.getItem(MEMORY)) ?? {};
+                return {
+                    ids: new Set((held.ids ?? []).filter(Number.isInteger)),
+                    names: new Set((held.names ?? []).filter((n) => typeof n === "string")),
+                };
+            } catch {
+                // private windows, blocked storage, anything else: start over
+                return {ids: new Set(), names: new Set()};
+            }
+        }
+
+        const memory = recall();
+
+        function remember() {
+            try {
+                localStorage.setItem(MEMORY, JSON.stringify({
+                    ids: [...memory.ids].slice(-LIMIT.ids),
+                    names: [...memory.names].slice(-LIMIT.names),
+                }));
+            } catch {
+                // nothing to do about it, the session still works
+            }
+        }
+
+        let queue = [];
+        let item = null;
+        const seen = memory.ids;
+
+        // a name is worth showing if this browser has not been given the row
+        // and has not dealt with the name. skipping on the name tells the
+        // server about the row, so the next batch brings something else.
+        function eligible(q) {
+            if (seen.has(q.id)) return false;
+            if (!memory.names.has(q.source)) return true;
+            seen.add(q.id);
+            remember();
+            return false;
+        }
+        // which string the card's status line is showing, so a language
+        // switch repaints it rather than replacing what it said
+        let doneKey = null;
+        // how many this visitor has read for themselves
+        let read = 0;
+
+        function setDone(key, bad = false) {
+            doneKey = key;
+            helpEl.done.textContent = t(key).replace("%s", read);
+            helpEl.done.classList.toggle("bad", bad);
+            helpEl.done.hidden = false;
+        }
+
+        function clearDone() {
+            doneKey = null;
+            helpEl.done.hidden = true;
+        }
+
+        function paintItem() {
+            if (doneKey) helpEl.done.textContent = t(doneKey);
+            if (!item) return;
+            helpEl.name.textContent = item.source;
+            helpEl.ours.replaceChildren();
+            const [before, after = ""] = t("helpOurs").split("%s");
+            helpEl.ours.append(before, el("b", null, item.ours), after);
+        }
+
+        function showItem(next) {
+            item = next;
+            seen.add(next.id);
+            remember();
+            paintItem();
+            helpEl.input.value = "";
+            helpEl.say.textContent = "";
+            helpEl.say.classList.remove("bad");
+            helpEl.send.disabled = false;
+            helpEl.ask.hidden = false;
+            helpEl.filed.hidden = true;
+            helpEl.up.disabled = false;
+            helpEl.down.disabled = false;
+            clearDone();
+            helpEl.more.hidden = false;
+            helpEl.name.hidden = false;
+            helpEl.ours.hidden = false;
+            helpEl.intro.hidden = false;
+            help.hidden = false;
+        }
+
+        async function reveal() {
+            if (!item) return;
+            const res = await fetch(`${API}/api/queue?id=${item.id}`);
+            if (!res.ok) return nextItem();
+            const {item: full} = await res.json();
+            helpEl.ask.hidden = true;
+            helpEl.filedName.textContent = full.suggestion;
+            helpEl.filedNote.textContent = full.note ?? "";
+            helpEl.filedNote.hidden = !full.note;
+            helpEl.tally.textContent = tally(full.up, full.down);
+            helpEl.filed.hidden = false;
+        }
+
+        const tally = (up, down) =>
+            up + down === 0 ? "" : `${up} · ${down}`;
+
+        async function nextItem() {
+            const fresh = queue.filter(eligible);
+            if (fresh.length) return showItem(fresh[0]);
+            // the server leaves out what it has already been told about, so
+            // an empty batch means there is no more. a batch can also empty
+            // itself on the filter above, so ask a few times before giving up
+            for (let tries = 0; tries < 5; tries++) {
+                const before = seen.size;
+                await loadQueue();
+                const again = queue.filter(eligible);
+                if (again.length) return showItem(again[0]);
+                if (seen.size === before) break;
+            }
+            item = null;
+            helpEl.ask.hidden = true;
+            helpEl.filed.hidden = true;
+            helpEl.more.hidden = true;
+            helpEl.name.hidden = true;
+            helpEl.ours.hidden = true;
+            helpEl.intro.hidden = true;
+            helpEl.ours.replaceChildren();
+            setDone(read ? "helpRun" : "helpEmpty");
+        }
+
+        async function loadQueue() {
+            // the last 200 is all the server will read, and all a session
+            // realistically gets through
+            const skip = [...seen].slice(-200).join(",");
+            const url = `${API}/api/queue${skip ? `?seen=${skip}` : ""}`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) return;
+                queue = (await res.json()).items ?? [];
+            } catch {
+                queue = [];
+            }
+        }
+
+        async function sendHelp() {
+            if (!item) return;
+            const reading = helpEl.input.value.trim().replace(/\s+/g, " ");
+            if (!reading) return;
+            helpEl.say.classList.remove("bad");
+            if (!reading.split(" ").every(isValidName)) {
+                helpEl.say.textContent = t("fixInvalid");
+                helpEl.say.classList.add("bad");
+                return;
+            }
+            helpEl.send.disabled = true;
+            try {
+                await fetch(`${API}/api/suggest`, {
+                    method: "POST",
+                    headers: {"content-type": "application/json"},
+                    body: JSON.stringify({
+                        name: item.source,
+                        suggestion: reading,
+                        engine: engine.value,
+                        via: "queue",
+                    }),
+                });
+                read++;
+                memory.names.add(item.source);
+                remember();
+                setDone("helpThanks");
+                await reveal();
+            } catch {
+                helpEl.say.textContent = t("fixFailed");
+                helpEl.say.classList.add("bad");
+                helpEl.send.disabled = false;
+            }
+        }
+
+        async function castVote(direction) {
+            if (!item) return;
+            helpEl.up.disabled = true;
+            helpEl.down.disabled = true;
+            try {
+                const res = await fetch(`${API}/api/vote`, {
+                    method: "POST",
+                    headers: {"content-type": "application/json"},
+                    body: JSON.stringify({id: item.id, vote: direction}),
+                });
+                if (res.ok) {
+                    const {up, down} = await res.json();
+                    helpEl.tally.textContent = tally(up, down);
+                    setDone("helpVoted");
+                } else {
+                    setDone("fixFailed", true);
+                }
+            } catch {
+                setDone("fixFailed", true);
+            }
+        }
+
+        helpEl.send.addEventListener("click", sendHelp);
+        helpEl.input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") sendHelp();
+        });
+        helpEl.skip.addEventListener("click", reveal);
+        helpEl.up.addEventListener("click", () => castVote("up"));
+        helpEl.down.addEventListener("click", () => castVote("down"));
+        helpEl.next.addEventListener("click", nextItem);
+
         input.addEventListener("input", render);
         engine.addEventListener("change", render);
         langSelect.addEventListener("change", applyLang);
@@ -751,6 +1381,12 @@
         const shared = new URL(location.href).searchParams.get("nimi");
         if (shared) input.value = shared;
         render();
+
+        // the card stays hidden until there is something in it to do
+        loadQueue().then(() => {
+            const first = queue.filter(eligible);
+            if (first.length) showItem(first[0]);
+        });
     </script>
 </body>
 

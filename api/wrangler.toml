@@ -8,3 +8,21 @@ compatibility_date = "2026-08-01"
 routes = [
   { pattern = "nimi.toki.li/*", zone_name = "toki.li" },
 ]
+
+# Reader-filed tokiponizations, written by /api/suggest.
+#
+# database_id stays out of the repo: the deploy workflow writes it in from
+# the D1_DATABASE_ID secret before it deploys. wrangler does no variable
+# substitution of its own here, so the value below is deliberately not a
+# real id, and a deploy from a working copy fails rather than quietly
+# talking to the wrong database.
+#
+# The database itself is created by hand, once, since creating it is what
+# prints that id. Its schema is not: migrations/ is applied by the same
+# workflow. With no usable binding the endpoint answers 503 and the rest of
+# the worker carries on.
+[[d1_databases]]
+binding = "SUGGESTIONS"
+database_name = "tokiponize-suggestions"
+database_id = "set-by-ci"
+migrations_dir = "migrations"

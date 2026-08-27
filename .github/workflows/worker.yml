@@ -31,7 +31,38 @@ jobs:
       - run: npm test
       - run: npm run build
 
-      - uses: cloudflare/wrangler-action@v3
+      # the id is a resource handle rather than a credential, but it is one
+      # line to keep it out of the repo, so it lives in a secret. wrangler
+      # does not read env vars out of its own config file.
+      - name: Point the D1 binding at the database
+        env:
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+        run: |
+          if [ -z "$D1_DATABASE_ID" ]; then
+            echo "the D1_DATABASE_ID secret is not set" >&2
+            exit 1
+          fi
+          sed -i "s|^database_id = \"set-by-ci\".*|database_id = \"$D1_DATABASE_ID\"|" \
+            api/wrangler.toml
+          if grep -q 'set-by-ci' api/wrangler.toml; then
+            echo "the placeholder is still there, substitution missed" >&2
+            exit 1
+          fi
+
+      # before the deploy, so the table is never younger than the worker
+      # writing to it. D1 records what it has run, so this is a no-op once
+      # every migration has been applied.
+      - name: Apply D1 migrations
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            d1 migrations apply tokiponize-suggestions --remote
+            --config api/wrangler.toml
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

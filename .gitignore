@@ -4,3 +4,6 @@ dist-test
 eval/data/report.json
 eval/data/tuned-pen.json
 site/lib
+.wrangler/
+.dev-suggestions.sqlite*
+eval/data/suggestions.jsonl

@@ -47,7 +47,8 @@
     "changeset": "changeset",
     "version": "changeset version",
     "release": "npm run build && npm test && changeset publish",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build && npm test",
+    "site": "npm run build && node --disable-warning=ExperimentalWarning scripts/dev-site.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.1",

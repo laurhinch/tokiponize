@@ -81,6 +81,16 @@ curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
 | `limit` | how many candidates, 1 to 8 (default 4) |
 | `experimental` | `1` to mix in the learned suggestions |
 
+## Corrections
+
+Under every result is a box for the reading you would have used instead.
+Further down, a queue shows a name someone else flagged and asks how you
+would write it before showing you their answer.
+
+**Nothing about who filed a reading is stored.**
+
+We use this data to train our experimental model, which helps us predict which readings are likely to be correct. The predictions are also used to improve the base model's rule tunings. I greatly appreciate your contributions to this project!
+
 ## Sharing a result
 
 Every result has its own link, and pasting one into Discord (or anywhere
@@ -151,7 +161,15 @@ npm install
 npm test                 # compile and run the test suite
 npm run build            # compile src/ to dist/ (what gets published)
 npm run dev -- Lauren    # build and run the CLI in one step
+npm run site             # the site on localhost:8787, API routes included
 ```
+
+`npm run site` serves `site/` with `/api/tokiponize` and `/api/suggest`
+attached, so the correction box works without a Cloudflare account.
+Corrections go into a local SQLite file and `/dev/suggestions` shows what
+has been filed. `/lib` is read straight out of `dist/`, so editing
+`site/index.html` only needs a reload, while library changes need a
+rebuild. Needs Node 22.5 or newer for `node:sqlite`.
 
 ## License
 
