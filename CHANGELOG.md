@@ -1,5 +1,37 @@
 # tokiponize
 
+## 1.5.0
+
+### Minor Changes
+
+- b9f3d91: Consonant clusters now lose a consonant before they gain a syllable, the
+  way the community reads them. `Christina` gives `Kisina` rather than
+  `Kiwisitina`, and `Flavor Foley` gives `Pajo Pole` rather than
+  `Palajo Pole`. Breaking a cluster with an echo vowel is still on the list,
+  since both readings are attested (`cricket` -> `Kilike`).
+  
+  Top-1 accuracy against the Wikidata set goes .408 -> .446, top-8
+  .518 -> .595, measured on a holdout the weights were never tuned on.
+  
+  `tokiponizeBest("Chris")` changes from `Kiwisi` to `Kisi`.
+
+### Patch Changes
+
+- 0d66819: Read Japanese long vowels as one sound: とうきょう is now Tokojo rather than "Tojujo", and the ー bar no longer doubles a vowel (シャーロット gives Saloto). The sh/ch/j kana rows also stop taking a stray glide, so しゃ is sha rather than "sja" and ジョン gives Son.
+- 7b7f222: The site and the API take corrections. `POST /api/suggest` files the reading
+  someone would have used instead, along with what the engine said at the time
+  and where that reading sat in its list. Submissions are rate limited and
+  checked against toki pona phonotactics, and nothing reaches `eval/` until
+  someone has reviewed it. Nothing identifying is stored.
+  
+  There is also a queue: `GET /api/queue` hands out names other people have
+  flagged without revealing what they suggested, `GET /api/queue?id=` reveals
+  one, and `POST /api/vote` agrees or disagrees with it. The site asks for
+  your own reading before showing you theirs, so the answers it collects are
+  independent of the complaint they are judging. `?seen=` leaves out names
+  already handed over, so a session can work through the whole queue, and a
+  name retires from it once it has 20 answers and votes behind it.
+
 ## 1.4.0
 
 ### Minor Changes
