@@ -41,7 +41,7 @@ tokiponize Lauren
 
 tokiponize --best Titan Chris María
 # Titan -> Sitan
-# Chris -> Kiwisi
+# Chris -> Kisi
 # María -> Mawija
 
 tokiponize --json Sam
@@ -69,8 +69,8 @@ curl "https://nimi.toki.li/api/tokiponize?name=Jakarta"
   "best": "Jakata",
   "candidates": [
     { "name": "Jakata", "score": -1.2 },
-    { "name": "Jakawata", "score": -2.9 },
-    { "name": "Jakalata", "score": -3.2 }
+    { "name": "Jakawa", "score": -1.75 },
+    { "name": "Jakala", "score": -2.05 }
   ]
 }
 ```
@@ -89,10 +89,6 @@ else that reads OpenGraph tags) draws the name as a card:
 <p align="center">
   <img src="site/discord-embed.png" alt="a tokiponize link unfurled in Discord, showing lauren becoming Lowen" width="496">
 </p>
-
-Grab the link with the share button under any result, or build it yourself:
-`https://nimi.toki.li/?nimi=lauren`. The card is drawn per name when the
-link gets unfurled.
 
 ## How it works
 
@@ -114,9 +110,7 @@ supported!
 
 `--experimental` (or `tokiponize(name, { experimental: true })`) adds
 suggestions from a small model trained on tokiponizations the community
-actually uses. The rules still pick the top candidate; the model fills the
-rest of the list with forms the rules never produce (Suomi -> `Sumi`,
-English -> `Enli`). It may change between releases.
+actually uses.
 
 **This is not an LLM or generative AI.** The "model" is a ~3KB table of
 letter-rewrite frequencies counted from real community examples, closer to
@@ -126,20 +120,17 @@ nothing runs remotely, and it can only ever output toki pona syllables.
 ## Accuracy
 
 Tested against ~4,900 real tokiponizations, taken from the
-[toki pona labels on Wikidata](https://www.wikidata.org/) (language code
-`tok`, CC0) and kept in
-[`eval/data/wikidata-tok.jsonl`](eval/data/wikidata-tok.jsonl). A name
-counts as matched if any of that entity's source-language names produces
-the community's form. Only names the tool was never tuned on:
+[toki pona labels on Wikidata](https://www.wikidata.org/), which are kept in
+[`eval/data/wikidata-tok.jsonl`](eval/data/wikidata-tok.jsonl).
 
 | engine | top-1 | top-4 | top-8 | missed entirely |
 |--------|-------|-------|-------|-----------------|
-| rules (default) | 40.8% | 50.6% | 51.8% | 48.2% |
-| `--experimental` | 40.8% | 54.5% | 57.4% | 42.6% |
+| rules (default) | 44.6% | 57.8% | 59.5% | 40.5% |
+| `--experimental` | 44.6% | 59.0% | 62.0% | 38.0% |
 
 Most misses are names the community based on what a place calls itself
 (Japan -> `Nijon` comes from "Nihon"), which the written source doesn't
-show. Start from the name the community used and it does much better. The
+show. Starting from the name the community used shows that the engine does much better. The
 scripts behind these numbers live in [`eval/`](eval/).
 
 ## Limitations

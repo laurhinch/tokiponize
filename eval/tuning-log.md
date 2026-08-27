@@ -60,6 +60,59 @@ all-caps initialisms (UK -> Juke):
 | rules | .408 | .506 | .518 | .482 |
 | hybrid | .408 | .545 | .574 | .426 |
 
+## Cluster reduction, a structural gap
+
+The beam consumed phonemes strictly left to right, so a consonant followed
+by another consonant had two moves: epenthesize it into its own syllable,
+or drop it. "Keep this one as an onset and drop the next" was not on the
+beam, which made the community's usual reading of a cluster unreachable
+rather than low-ranked. Chris produced 16 candidates and Kisi was in none
+of them. Flavor produced 12 and gave Palajo.
+
+Splitting the eval on whether the source's phoneme string holds a cluster
+shows where this cost us (English labels, single-word attested forms):
+
+| source | n | top1 | top8 |
+|--------|---|------|------|
+| has a cluster | 1584 | .162 | .248 |
+| no cluster | 1959 | .306 | .424 |
+
+Clusters are 45% of the corpus and score about half as well.
+`eval/cluster-slice.mjs` reproduces the split. After the change it reads
+.199 / .328 against .309 / .428, and the misses left in the cluster bucket
+are endonyms (France -> Kanse, Sweden -> Sensa), not rules.
+
+PEN.clusterReduce prices a cluster member lost so its neighbour can stay
+an onset, charged per consonant dropped. Swept on the train split and
+confirmed on holdout, the same discipline that rejected the automated
+tuner in row 10:
+
+| clusterReduce | train top1 | hold top1 | hold top4 | hold unreach | hold dist |
+|---------------|------------|-----------|-----------|--------------|-----------|
+| off | .4155 | .4099 | .5253 | .4461 | .1786 |
+| -2.2 | .4296 | .4216 | .5692 | .4058 | .1748 |
+| -1.9 | .4317 | .4257 | .5712 | .4084 | .1745 |
+| **-1.75** | **.4444** | **.4410** | **.5743** | .4079 | .1672 |
+| -1.6 | .4434 | .4405 | .5717 | .4079 | .1677 |
+| -1.4 | .4406 | .4390 | .5687 | .4099 | .1680 |
+
+With the move on the beam, epenthesis is worth more than it was. Sweeping
+it from -1.8 to -2 adds .0026 on holdout top1 and the curve is flat out to
+-3.2, so it takes the least aggressive value that gets the gain. The
+resulting order reads the way the wiki describes: finalDrop -0.75 <
+clusterReduce -1.75 < dropConsonant -1.9 < epenthesis -2 < initialDrop -3.
+
+Which member survives is left to the weights rather than fixed by a rule,
+since the corpus attests both. Christmas Island -> Kisima and Christina
+Rossetti -> Kisina keep the head; cricket -> Kilike and Crimea -> Kilin
+break the cluster with an echo vowel. The canon example for Chris moved
+from Kiwisi to Kisi on that evidence.
+
+| engine | top1 | top4 | top8 | unreachable |
+|--------|------|------|------|-------------|
+| rules | .446 | .578 | .595 | .405 |
+| hybrid | .446 | .590 | .620 | .380 |
+
 ## initialDrop, a deliberate loss
 
 Cheaper consonant drops let word-initial sounds vanish: Christopher gave
@@ -81,6 +134,10 @@ names live or die on their first sound. A test pins the behavior.
   - genuine rule gaps left: community-inconsistent -ija clipping
     (Losi vs Italija), heavy clipping (Deutsch -> Tosi), vowel quality
     (English -> Inli needs e -> i).
+- That call held up. Cluster reduction was one of those structural gaps,
+  and adding the move rather than retuning around it took top1 .408 -> .446
+  and cut the unreachable bucket by 7.7 points. Still open from that list:
+  vowel quality, and metathesis (Lubnan -> Lunpan, not Lupan).
 
 ## Per-script reading quality
 

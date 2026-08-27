@@ -124,6 +124,8 @@ const BEAM_WIDTH = 40;
 // exported so eval tooling can adjust weights at runtime
 export const PEN = {
   dropConsonant: -1.9,
+  // a cluster member lost so its neighbour can stay an onset (Chris -> Kisi)
+  clusterReduce: -1.75,
   dropCodaLiquid: -1.2,
   initialDrop: -3,
   // drop the word's last consonant cheaper than a mid-cluster one
@@ -131,6 +133,7 @@ export const PEN = {
   dropVowel: -1.75,
   // second vowel of hiatus (Suomi -> Sumi)
   hiatusDrop: -1.5,
+  sameVowel: -0.05,
   initialVowelDrop: -1.75,
   // word-final nasal+vowel to coda n (Pechino -> Pesin)
   finalNasalClip: -1.1,
@@ -140,7 +143,7 @@ export const PEN = {
   finalAShift: -0.55,
   // keeping a probably-silent English final e pronounced
   pronouncedFinalE: -0.5,
-  epenthesis: -1.8,
+  epenthesis: -2,
   glideNatural: -0.4,
   glideOther: -1.25,
   finalSToSyllable: -0.5,
@@ -209,10 +212,13 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
               });
             }
           }
+          // a vowel repeated after itself is the same sound twice, usually
+          // because a consonant between them dropped (Sahara -> Sawa).
+          // merging costs nothing; a glide there would invent a syllable.
           nextActive.push({
             i: st.i + 1,
             syls: st.syls,
-            score: st.score + PEN.hiatusDrop,
+            score: st.score + (ch === prevV ? PEN.sameVowel : PEN.hiatusDrop),
           });
         }
         continue;
@@ -266,6 +272,30 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
         continue;
       }
 
+      // keep this consonant as an onset and drop the rest of the cluster (Chris -> Kisi).
+      let vi = st.i + 1;
+      while (vi < ph.length && !VOWELS.has(ph[vi]!)) vi++;
+      if (vi < ph.length && vi > st.i + 1) {
+        const lost = (vi - st.i - 1) * PEN.clusterReduce;
+        for (const opt of cvOptions(ch, ph[vi]!, wordInitial)) {
+          if (!CONSONANTS.has(opt.syl[0]!) && !wordInitial) continue;
+          const syls = [...st.syls, opt.syl];
+          const base = {
+            i: vi + 1,
+            syls,
+            score: st.score + opt.penalty + lost,
+          };
+          if (ph[base.i] === "n" && codaAllowed(ph, base.i, syls)) {
+            nextActive.push({
+              i: base.i + 1,
+              syls: [...syls.slice(0, -1), syls[syls.length - 1] + "n"],
+              score: base.score,
+            });
+          }
+          nextActive.push(base);
+        }
+      }
+
       // break the cluster with an echo vowel (Chris -> Kilisi).
       const echo = nextVowelAhead(ph, st.i + 1) || lastVowelOf(st.syls) || "a";
       for (const opt of cvOptions(ch, echo, wordInitial)) {
@@ -288,9 +318,7 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
         i: st.i + 1,
         syls: st.syls,
         score: st.score +
-          (next === undefined
-            ? PEN.finalDrop
-            : !st.syls.length
+          (next === undefined ? PEN.finalDrop : !st.syls.length
             // losing the sound a name starts with is worse than losing
             // one in the middle (Christopher, not Witope)
             ? PEN.initialDrop

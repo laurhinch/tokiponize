@@ -30,7 +30,7 @@ const CANON_BEST = [
   ["Emma", "Ema"],
   ["Sam", "San"],
   ["guitar", "Kita"],
-  ["Chris", "Kiwisi"],
+  ["Chris", "Kisi"],
   ["Zoe", "Sowe"],
   ["Wren", "Wen"],
   ["Telephone", "Telepon"],

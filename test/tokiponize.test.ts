@@ -85,10 +85,20 @@ describe("known tokiponizations", () => {
     assert.equal(tokiponizeBest("Emma"), "Ema");
   });
 
-  test("clusters break with echo vowels instead of vanishing", () => {
-    assert.equal(tokiponizeBest("Chris").startsWith("Ki"), true);
+  test("a cluster loses a consonant before it gains a syllable", () => {
+    // both attested on Wikidata
+    assert.equal(tokiponizeBest("Christina"), "Kisina");
+    assert.equal(tokiponizeBest("Chris"), "Kisi");
+    const gliwice = tokiponize("Gliwice", { limit: 8 }).map((c) => c.name);
+    assert.ok(gliwice.includes("Kiwise"));
+  });
+
+  test("breaking a cluster with an echo vowel stays on the list", () => {
+    // cricket -> Kilike is attested too, so both readings must survive
     const chris = tokiponize("Chris", { limit: 8 }).map((c) => c.name);
     assert.ok(chris.includes("Kiwisi"));
+    const cricket = tokiponize("cricket", { limit: 8 }).map((c) => c.name);
+    assert.ok(cricket.includes("Kilike"));
   });
 
   test("glide insertion preserves vowel sequences", () => {
@@ -102,8 +112,8 @@ describe("known tokiponizations", () => {
 
   test("a trailing consonant with no vowel to attach prefers dropping over adding a syllable", () => {
     assert.equal(tokiponizeBest("guitar"), "Kita");
-    // trailing s is the exception: its echo syllable is still cheap enough to win
-    assert.equal(tokiponizeBest("Chris"), "Kiwisi");
+    // trailing s is the exception, its echo syllable is cheap enough to keep
+    assert.equal(tokiponizeBest("Chris"), "Kisi");
   });
 
   test("English silent final e: the clipped reading ranks first, the pronounced one stays an option", () => {
