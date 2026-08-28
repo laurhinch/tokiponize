@@ -37,7 +37,18 @@ jobs:
           cp -r site/. _site/
           rm -rf _site/lib
           mkdir -p _site/lib
-          cp dist/index.js dist/scripts.js dist/experimental.js dist/model.js _site/lib/
+          cp dist/*.js _site/lib/
+          rm -f _site/lib/cli.js
+
+          # a module the page cannot resolve takes down every script on it,
+          # so check the graph before this ships
+          missing=0
+          for f in _site/lib/*.js; do
+            for dep in $(sed -n 's|.*from "\./\([^"]*\)".*|\1|p' "$f"); do
+              [ -f "_site/lib/$dep" ] || { echo "$f imports $dep, which is missing" >&2; missing=1; }
+            done
+          done
+          [ "$missing" = 0 ]
 
       - uses: actions/configure-pages@v5
 
