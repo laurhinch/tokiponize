@@ -48,6 +48,7 @@
     "version": "changeset version",
     "release": "npm run build && npm test && changeset publish",
     "prepublishOnly": "npm run build && npm test",
+    "canon": "npm run build && node eval/canon.mjs",
     "site": "npm run build && node --disable-warning=ExperimentalWarning scripts/dev-site.mjs"
   },
   "devDependencies": {

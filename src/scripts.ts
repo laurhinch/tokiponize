@@ -13,10 +13,14 @@ const SPECIAL_LATIN: Record<string, string> = {
   "ç": "s",
   // German eszett
   "ß": "ss",
-  // Nordic/German vowels with no decomposable diacritic
-  "ø": "o",
-  "æ": "a",
+  // front rounded vowels. NFD would strip the diacritic and leave the back
+  // vowel, the wrong end of the mouth (Björk -> Pije, Goethe -> Kete)
+  "ø": "e",
+  "ö": "e",
+  "æ": "e",
   "œ": "e",
+  // a-ring is a back rounded vowel, not an a
+  "å": "o",
   // Icelandic/Old English dental fricatives
   "ð": "th",
   "þ": "th",
@@ -56,6 +60,8 @@ const DIGRAPHS: Array<[string, string[]]> = [
   ["dz", ["z"]],
   ["th", ["th"]],
   ["ph", ["f"]],
+  // one affricate (Fritz, Quetzalcoatl)
+  ["tz", ["s"]],
   ["ght", ["t"]],
   ["gh", []],
   ["ck", ["k"]],
@@ -154,7 +160,36 @@ function latinTokens(raw: string): string[] {
       i += 2;
       continue;
     }
-    const digraph = DIGRAPHS.find(([pat]) => s.startsWith(pat, i));
+    // Irish lenition, but only at the end of a word, where no other
+    // language puts these letters together. mid-word they're a stop and an
+    // h that happen to meet (Bhutan, treibhausgas)
+    if (
+      (s.startsWith("bh", i) || s.startsWith("mh", i)) && i + 2 === s.length
+    ) {
+      tokens.push("w");
+      i += 2;
+      continue;
+    }
+    // at either edge tl is Nahuatl's one sound. mid-word it's a t and an l
+    // in different syllables (Atlanta)
+    if (
+      s.startsWith("tl", i) && (i === 0 || i + 2 === s.length)
+    ) {
+      tokens.push("t");
+      i += 2;
+      continue;
+    }
+    const digraph = DIGRAPHS.find(([pat]) => {
+      if (!s.startsWith(pat, i)) return false;
+      const after = s[i + 2] ?? "";
+      // an h right after two vowels marks a syllable break, so they're two
+      // nuclei and not a digraph (Noah, Leah)
+      if (/^[aeiou][aeiou]$/.test(pat) && after === "h") return false;
+      // w or y with a vowel behind it opens the next syllable (Malawi, not
+      // Maloi). behind a consonant or nothing the digraph is real (Shaw)
+      if (/^[aeiou][wy]$/.test(pat) && /^[aeiou]$/.test(after)) return false;
+      return true;
+    });
     if (digraph) {
       tokens.push(...digraph[1]);
       i += digraph[0].length;
@@ -168,7 +203,12 @@ function latinTokens(raw: string): string[] {
     // default j to the glide /j/, the more common reading across languages, not English's /dʒ/
     else if (ch === "j") tokens.push("j");
     else if (ch === "q") tokens.push("k");
-    else if (ch === "x") tokens.push("k", "s");
+    // every language that starts a word with x reads it as a fricative
+    // (xinès, Xi, Xochitl, Xavier). mid-word it's the /ks/ of Alexander
+    else if (ch === "x") {
+      if (i === 0) tokens.push("s");
+      else tokens.push("k", "s");
+    }
     // y is a consonant glide before a vowel, otherwise a vowel
     else if (ch === "y") {
       tokens.push(next && "aeiou".includes(next) ? "j" : "i");

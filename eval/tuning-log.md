@@ -161,3 +161,81 @@ Latin trails everything, which fits: it is the only script here where the
 spelling does not tell you the sounds. Greek sat at the bottom before the
 digraph fix; a stranger reported that, not this harness, which is why the
 breakdown exists now.
+
+## English comes from a dictionary
+
+English spelling does not determine English sound. Whether `th` is /t/ or
+/θ/ is a fact about the word, Thomas against Anthony, and no letter rule
+recovers it. `eval/cmudict-fold.py` and `eval/build-lexicon.mjs` fold
+CMUdict into the toki pona inventory offline and ship the 87k entries our
+rules get wrong; a miss falls through to the rules.
+
+The community used both readings: Malta by its letters, John by its sound.
+The two usually tie on score, so the order the variants are tried in
+decides it. Ties go to the spelling, which keeps every rank-1 answer the
+rules already had and lets the dictionary only add candidates. Rank 1
+unchanged, top 4 +65, unreachable -82. One line in `tokiponizeWord` to
+reverse.
+
+A word with a diacritic is skipped. CMUdict knows Maria, not María.
+
+## What a dropped consonant costs
+
+One flat penalty per position, same for every consonant, was wrong twice
+over. Deletion rates from the training alignments:
+
+| ph | initial | medial | final |
+|----|---------|--------|-------|
+| k | 3% | 11% | 79% |
+| t | 5% | 13% | 86% |
+| w | 3% | 39% | 83% |
+| l | 1% | 18% | 60% |
+| m | 1% | 5% | 9% |
+| n | 1% | 3% | 1% |
+
+A final k goes most of the time and a final n almost never, since toki pona
+has an n coda to put it in. `eval/build-drops.mjs` writes these to
+`src/drops.ts` and `dropScale` turns a rate into a cost. Final s deletes 78%
+of the time, which undercut `finalSToSyllable` and turned Chris into Ki, so
+that weight moved to .15.
+
+## Rules rejected, and what rejected them
+
+Check a spelling rule against the corpus before adding it. These lost:
+
+| rule | colliding words |
+|------|-----------------|
+| dh silent | 143 (Albanian dhjetë, Sanskrit andhra, German gesundheit) |
+| ao to i | 212 (tao, sao, saoudite) |
+| medial ll to s | 1166 (estrella, csillag, yll) |
+| initial ll to s | 44 (Catalan llac, llibre) |
+| wy to u | 94 (Polish wyspa, nowy) |
+| initial qi to s | 13, split 6 pinyin against 7 Azerbaijani |
+| initial i before a vowel to j | 73 support it, Ian and Ioannis lose |
+
+bh and mh went in without that check and cost 90 words: Bhutan read as
+wutan, plus amharic, cumhuriyeti, treibhausgas. Word-final bh and mh have
+no collisions, so the rule lives there now. The eval scored both the same,
+so it cannot see this class of error.
+
+## Two approaches that do not work
+
+A syllable bigram model over the attested names, reranking rule candidates,
+hurts monotonically: 54.3% at weight 0, 50.8% at 1, 42.4% at 3. Every rule
+candidate is already legal toki pona, so a prior over what names look like
+cannot separate them.
+
+Reading a name under many languages does not work either. Across 17 epitran
+Latin readers, no fixed reader beats the hand-written tokenizer (ours .385,
+best alternative .399, French .464), and the per-name winner is scattered
+with nothing to pick it by. Given each label's own language for free a real
+G2P still loses: ours .3707, correct language .3758, generic-Latn .3681.
+Correct is worse than generic because the community often reads a name by
+its letters rather than by its source language's sound. Whatever IPA comes
+out is collapsed into nine consonants and five vowels, where the precision
+disappears.
+
+Worth running as a bug finder though. Grouping the label words where a real
+G2P clearly beat us turned up aw, ow, ay, ey and oy firing where the w or y
+opens the next syllable: sarawak as /sawoak/, malawi as /maloi/, mayan as
+/mean/. Fixing that was the largest single rule here.

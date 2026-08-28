@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { toPhonemes } from "../dist/index.js";
-import { capWords, levenshtein, splitWords, usableLabel } from "./lib.mjs";
+import { levenshtein, nameWords, splitWords, usableLabel } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const rows = readFileSync(join(here, "data", "wikidata-tok.jsonl"), "utf8")
@@ -16,9 +16,10 @@ const rows = readFileSync(join(here, "data", "wikidata-tok.jsonl"), "utf8")
 // pair each toki pona word with the closest source word; far pairs are
 // endonym mismatches and would poison the counts
 const pairs = new Map();
+const holdout = new Map();
 for (const row of rows) {
-  if (Number(row.id.slice(1)) % 10 >= 6) continue;
-  for (const att of capWords(row.tok)) {
+  const isHoldout = Number(row.id.slice(1)) % 10 >= 6;
+  for (const att of nameWords(row.tok)) {
     const target = att.toLowerCase();
     let best = null;
     for (const label of Object.values(row.labels)) {
@@ -30,15 +31,22 @@ for (const row of rows) {
         if (!best || d < best.d) best = { ph, d };
       }
     }
-    if (best && best.d <= 0.6) pairs.set(`${best.ph} ${target}`, [best.ph, target]);
+    if (!best || best.d > 0.6) continue;
+    const into = isHoldout ? holdout : pairs;
+    into.set(`${best.ph} ${target}`, [best.ph, target]);
   }
 }
 const data = [...pairs.values()];
-console.log(`${data.length} training pairs`);
+const heldOut = [...holdout.values()];
+console.log(`${data.length} training pairs, ${heldOut.length} held out`);
 
 // ops rewrite up to 2 source chars into up to 2 target chars
 const MAXS = 2;
 const MAXT = 2;
+
+// where a rewrite sits. keyed on the phoneme alone, one cost has to cover
+// every position, and the positions don't agree
+const posOf = (start, end, len) => start === 0 ? "i" : end === len ? "f" : "m";
 
 function heuristicCost(s, t) {
   if (s === t) return 0.1;
@@ -49,8 +57,11 @@ function heuristicCost(s, t) {
 }
 
 let costs = null;
-const cost = (s, t) => {
-  if (costs) return costs.get(`${s}\t${t}`) ?? 8;
+const cost = (s, t, pos) => {
+  if (costs) {
+    // back off to the context-free cell when the positional one is unseen
+    return costs.get(`${s}|${pos}\t${t}`) ?? costs.get(`${s}\t${t}`) ?? 8;
+  }
   return heuristicCost(s, t);
 };
 
@@ -69,10 +80,11 @@ function align(src, tgt) {
           if (!ls && !lt) continue;
           const s = src.slice(i, i + ls);
           const t = tgt.slice(j, j + lt);
-          const c = dp[i][j] + cost(s, t);
+          const pos = posOf(i, i + ls, m);
+          const c = dp[i][j] + cost(s, t, pos);
           if (c < dp[i + ls][j + lt]) {
             dp[i + ls][j + lt] = c;
-            back[i + ls][j + lt] = [i, j, s, t];
+            back[i + ls][j + lt] = [i, j, s, t, pos];
           }
         }
       }
@@ -83,8 +95,8 @@ function align(src, tgt) {
   let i = m;
   let j = n;
   while (i || j) {
-    const [pi, pj, s, t] = back[i][j];
-    ops.push([s, t]);
+    const [pi, pj, s, t, pos] = back[i][j];
+    ops.push([s, t, pos]);
     i = pi;
     j = pj;
   }
@@ -95,15 +107,18 @@ for (let iter = 0; iter < 3; iter++) {
   const counts = new Map();
   const bySource = new Map();
   for (const [src, tgt] of data) {
-    for (const [s, t] of align(src, tgt)) {
-      const key = `${s}\t${t}`;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-      bySource.set(s, (bySource.get(s) ?? 0) + 1);
+    for (const [s, t, pos] of align(src, tgt)) {
+      // count the positional cell and the context-free cell backing it off
+      for (const src2 of [`${s}|${pos}`, s]) {
+        const key = `${src2}\t${t}`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+        bySource.set(src2, (bySource.get(src2) ?? 0) + 1);
+      }
     }
   }
   costs = new Map();
   for (const [key, c] of counts) {
-    const s = key.split("\t")[0];
+    const s = key.slice(0, key.indexOf("\t"));
     costs.set(key, -Math.log((c + 0.1) / (bySource.get(s) + 5)));
   }
   console.log(`iter ${iter + 1}: ${counts.size} ops`);
@@ -115,7 +130,9 @@ for (let iter = 0; iter < 3; iter++) {
 
 const model = {};
 for (const [key, c] of costs) {
-  const [s, t] = key.split("\t");
+  const cut = key.indexOf("\t");
+  const s = key.slice(0, cut);
+  const t = key.slice(cut + 1);
   (model[s] ??= {})[t] = Math.round(c * 1000) / 1000;
 }
 
@@ -126,3 +143,50 @@ export const MODEL: Record<string, Record<string, number>> = ${
 `;
 writeFileSync(join(here, "..", "src", "model.ts"), out);
 console.log(`wrote src/model.ts (${Object.keys(model).length} sources)`);
+
+// score what was just built, so a change to the counts can be judged
+// without rebuilding and rerunning the eval
+function decodeTop(ph) {
+  let beams = [{ i: 0, out: "", score: 0, inserted: false }];
+  const done = [];
+  while (beams.length) {
+    const next = new Map();
+    for (const b of beams) {
+      const minLen = b.inserted || b.i === 0 ? 1 : 0;
+      for (let ls = minLen; ls <= MAXS && b.i + ls <= ph.length; ls++) {
+        const src = ph.slice(b.i, b.i + ls);
+        const pos = posOf(b.i, b.i + ls, ph.length);
+        const rw = { ...model[src], ...model[`${src}|${pos}`] };
+        for (const [t, c] of Object.entries(rw)) {
+          if (!ls && !t) continue;
+          const nb = {
+            i: b.i + ls,
+            out: b.out + t,
+            score: b.score + c,
+            inserted: ls === 0,
+          };
+          if (nb.i === ph.length) { done.push(nb); continue; }
+          const key = `${nb.i}\t${nb.out.slice(-2)}\t${nb.inserted ? 1 : 0}`;
+          const prev = next.get(key);
+          if (!prev || nb.score < prev.score) next.set(key, nb);
+        }
+      }
+    }
+    beams = [...next.values()].sort((a, b) => a.score - b.score).slice(0, 48);
+  }
+  done.sort((a, b) => a.score - b.score);
+  return done[0]?.out ?? "";
+}
+
+let hit = 0;
+let near = 0;
+for (const [src, tgt] of heldOut) {
+  const got = decodeTop(src);
+  if (got === tgt) hit++;
+  else if (levenshtein(got, tgt) <= 1) near++;
+}
+const pct = (n) => `${((100 * n) / heldOut.length).toFixed(1)}%`;
+console.log(
+  `holdout: exact ${hit}/${heldOut.length} (${pct(hit)}), ` +
+    `within one edit ${hit + near}/${heldOut.length} (${pct(hit + near)})`,
+);

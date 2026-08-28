@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { englishReading } from "../src/english.js";
 import { isValidName, syllabify, toPhonemes, tokiponize, tokiponizeBest } from "../src/index.js";
 
 const SAMPLE_NAMES = [
@@ -181,7 +182,7 @@ describe("phonetic mapping (sona pona wiki: Tokiponization)", () => {
 
   test("glottal h drops word-initially and leaves a hiatus mid-word for the syllabifier to resolve", () => {
     assert.equal(toPhonemes("Hugo"), "uko");
-    assert.equal(toPhonemes("Noah"), "no");
+    assert.equal(toPhonemes("Noah"), "noa");
   });
 
   test("standalone j stays the glide /j/, not assumed English /dʒ/", () => {
@@ -191,7 +192,8 @@ describe("phonetic mapping (sona pona wiki: Tokiponization)", () => {
 
   test("accented and non-decomposing Latin letters map to their actual sound", () => {
     assert.equal(toPhonemes("François"), toPhonemes("Fransois")); // ç -> s
-    assert.equal(toPhonemes("Søren"), "sowen"); // ø -> o, then written r -> w as usual
+    // ø and ö are front rounded vowels, so e is the near one, not o
+    assert.equal(toPhonemes("Søren"), "sewen");
     assert.equal(toPhonemes("Łukasz"), "wukas"); // ł -> w; sz -> sh -> s
     assert.equal(toPhonemes("Müller"), "mulew"); // ü strips to its base vowel
   });
@@ -403,5 +405,36 @@ describe("other scripts (sona pona wiki: Tokiponization)", () => {
     assert.deepEqual(tokiponize("李"), []);
     // but a run of supported script alongside one is still read
     assert.equal(toPhonemes("María-李"), toPhonemes("María"));
+  });
+});
+
+describe("English is read from a dictionary, not from its spelling", () => {
+  test("a word CMUdict knows is offered the way it is said as well as spelled", () => {
+    // John is /dʒɒn/, and j is the glide in most of what this reads
+    const john = tokiponize("John", { limit: 8 }).map((c) => c.name);
+    assert.ok(john.includes("San"), john.join(" "));
+    assert.ok(john.includes("Jon"), john.join(" "));
+    const sarah = tokiponize("Sarah", { limit: 8 }).map((c) => c.name);
+    assert.ok(sarah.includes("Sewa"), sarah.join(" "));
+  });
+
+  test("both readings are conventions the community uses, so a tie goes to the spelling", () => {
+    // Malta and Tamil went by their letters, John and Boston by their
+    // sound, so the dictionary only ever adds a candidate
+    assert.equal(tokiponizeBest("Malta"), "Mata");
+    assert.equal(tokiponizeBest("Anna Karenina"), "Ana Kawenina");
+  });
+
+  test("a word carrying a diacritic is not English and is left to the rules", () => {
+    assert.equal(englishReading("María"), "");
+    assert.equal(englishReading("Björk"), "");
+    // so the Spanish reading of María survives
+    assert.equal(tokiponizeBest("María"), "Mawija");
+  });
+
+  test("the lexicon holds only what the rules get wrong", () => {
+    // guitar is regular enough for the rules to get
+    assert.equal(englishReading("guitar"), "");
+    assert.equal(tokiponizeBest("guitar"), "Kita");
   });
 });

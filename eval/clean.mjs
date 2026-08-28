@@ -1,14 +1,19 @@
-// Prune wikidata-tok.jsonl: drop entities with no capitalized proper name
-// or an invalid attested form, drop labels our scripts can't pronounce,
-// and strip lowercase head nouns from the tok field.
+// Prune wikidata-tok.jsonl: drop entities with no name or an invalid
+// attested form, drop labels our scripts can't pronounce, strip the toki
+// pona head nouns a name sits next to, and strip attested words no label
+// could have produced.
+//
+// tokRaw keeps the harvested form, so a word we drop today because we
+// misread its source comes back once the reading is fixed.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { toPhonemes, isValidName } from "../dist/index.js";
-import { capWords, splitWords, usableLabel } from "./lib.mjs";
+import { nameWords, sourcedWords, splitWords, usableLabel } from "./lib.mjs";
 
-const file = join(dirname(fileURLToPath(import.meta.url)), "data", "wikidata-tok.jsonl");
+const dir = join(dirname(fileURLToPath(import.meta.url)), "data");
+const file = join(dir, "wikidata-tok.jsonl");
 const rows = readFileSync(file, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
 if (rows.length < 1000) {
   console.error(`only ${rows.length} rows, refusing to overwrite (bad harvest?)`);
@@ -16,10 +21,13 @@ if (rows.length < 1000) {
 }
 
 const dropped = { noName: 0, invalidAttested: 0, labels: 0, noLabels: 0 };
+const trimmedWords = { qualifier: 0, entities: 0 };
 const kept = [];
+const rejected = [];
 
 for (const row of rows) {
-  const att = capWords(row.tok);
+  const tokRaw = row.tokRaw ?? row.tok;
+  const att = nameWords(tokRaw);
   if (!att.length) {
     dropped.noName++;
     continue;
@@ -39,9 +47,26 @@ for (const row of rows) {
     dropped.noLabels++;
     continue;
   }
-  kept.push({ ...row, tok: att.join(" "), labels });
+
+  // a word no label could have produced is a qualifier (Omi Nijon for Omi
+  // Province) or a translation (Wikisoweli for Wikispecies), not a reading
+  const sourced = sourcedWords({ labels }, att, toPhonemes);
+  if (sourced.length < att.length) {
+    trimmedWords.qualifier += att.length - sourced.length;
+    trimmedWords.entities++;
+    rejected.push({
+      id: row.id,
+      tokRaw: att.join(" "),
+      unsourced: att.filter((w) => !sourced.includes(w)).join(" "),
+      en: labels.en ?? Object.values(labels)[0],
+    });
+  }
+  kept.push({ id: row.id, tok: sourced.join(" "), tokRaw: att.join(" "), labels });
 }
 
 writeFileSync(file, kept.map((r) => JSON.stringify(r)).join("\n") + "\n");
+writeFileSync(join(dir, "rejected.jsonl"), rejected.map((r) => JSON.stringify(r)).join("\n") + "\n");
 console.log(`kept ${kept.length} of ${rows.length} entities`);
 console.log(dropped);
+console.log(`unsourced words stripped: ${trimmedWords.qualifier} across ${trimmedWords.entities} entities`);
+console.log(`fully unsourced (tok now empty): ${kept.filter((r) => !r.tok).length}`);

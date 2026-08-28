@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { toPhonemes, tokiponize } from "../dist/index.js";
-import { alignPairs, capWords, usableLabel } from "./lib.mjs";
+import { alignPairs, nameWords, usableLabel } from "./lib.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const rows = readFileSync(join(here, "data", "wikidata-tok.jsonl"), "utf8")
@@ -27,7 +27,7 @@ for (const row of rows) {
   // one English label per entity, so a name is counted once
   for (const [lang, label] of Object.entries(row.labels)) {
     if (!lang.startsWith("en") || !usableLabel(label)) continue;
-    const attested = capWords(row.tok);
+    const attested = nameWords(row.tok);
     if (attested.length !== 1) continue;
     const pairs = alignPairs(label, attested);
     if (!pairs || pairs.length !== 1) continue;

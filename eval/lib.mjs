@@ -12,8 +12,32 @@ export function usableLabel(label) {
   return !/[()\[\]{}0-9/,.:;!?"&+*=@#%$]/.test(label);
 }
 
-export function capWords(tok) {
-  return splitWords(tok).filter((w) => /^[A-Z]/.test(w));
+// toki pona's own vocabulary. a name sits next to a head noun (ma Kanse,
+// toki Inli) and case is too unreliable to find the head by
+const TP_WORDS = new Set(
+  `a akesi ala alasa ale ali anpa ante anu awen e en esun ijo ike ilo insa jaki
+jan jelo jo kala kalama kama kasi ken kepeken kili kiwen ko kon kule kulupu kute
+la lape laso lawa len lete li lili linja lipu loje lon luka lukin lupa ma mama
+mani meli mi mije moku moli monsi mu mun musi mute nanpa nasa nasin nena ni nimi
+noka o olin ona open pakala pali palisa pan pana pi pilin pimeja pini pipi poka
+poki pona pu sama seli selo seme sewi sijelo sike sin sina sinpin sitelen sona
+soweli suli suno supa suwi tan taso tawa telo tenpo toki tomo tu unpa uta utala
+walo wan waso wawa weka wile
+namako kin oko kipisi leko monsuta tonsi jasima soko meso epiku kokosila lanpan
+misikeke n su ku kijetesantakalu majuna`.split(/\s+/),
+);
+
+/** How close a label must read for a word to count as sourced. */
+export const UNSOURCED_DIST = 0.6;
+// ma lands inside the loose bound next to Mali by luck, so make a
+// dictionary word earn its place
+const TP_WORD_DIST = 0.25;
+
+/** The words of an attested form that could be a name. Case is ignored. */
+export function nameWords(tok) {
+  return splitWords(tok)
+    .map((w) => w.toLowerCase())
+    .filter((w) => /^[a-z]+$/.test(w));
 }
 
 export function levenshtein(a, b) {
@@ -111,7 +135,8 @@ export function scoreLabel(label, attWords) {
 export function evaluateRows(rows, { samples = false } = {}) {
   const stats = {
     entities: rows.length,
-    noCapitalizedName: 0,
+    noNameWord: 0,
+    unsourced: 0,
     invalidAttested: 0,
     noAlignableLabel: 0,
     scored: 0,
@@ -126,9 +151,10 @@ export function evaluateRows(rows, { samples = false } = {}) {
   const unreachable = [];
 
   for (const row of rows) {
-    const attWords = capWords(row.tok);
+    const attWords = nameWords(row.tok);
     if (!attWords.length) {
-      stats.noCapitalizedName++;
+      if (row.tokRaw) stats.unsourced++;
+      else stats.noNameWord++;
       continue;
     }
     if (!attWords.every((w) => isValidName(w))) {
@@ -230,7 +256,7 @@ export function scriptOf(text) {
 export function scriptBreakdown(rows) {
   const by = {};
   for (const row of rows) {
-    const attWords = capWords(row.tok);
+    const attWords = nameWords(row.tok);
     if (!attWords.length || !attWords.every((w) => isValidName(w))) continue;
     const seen = new Set();
     for (const label of Object.values(row.labels)) {
@@ -261,4 +287,25 @@ export function scriptBreakdown(rows) {
     };
   }
   return out;
+}
+
+// an attested word no label explains is a qualifier or a translation of
+// the meaning, and belongs in neither the eval nor the training pairs
+/** Attested words that some label word could plausibly have produced. */
+export function sourcedWords(row, attWords, toPhonemes) {
+  const sources = [];
+  for (const label of Object.values(row.labels)) {
+    if (!usableLabel(label)) continue;
+    for (const w of splitWords(label)) {
+      const ph = toPhonemes(w);
+      if (ph) sources.push(ph);
+    }
+  }
+  return attWords.filter((att) => {
+    const target = att.toLowerCase();
+    const bound = TP_WORDS.has(target) ? TP_WORD_DIST : UNSOURCED_DIST;
+    return sources.some((ph) =>
+      levenshtein(ph, target) / Math.max(ph.length, target.length) <= bound
+    );
+  });
 }

@@ -1,7 +1,9 @@
 // Converts names into toki pona phonotactics (rules: sona.pona.la/wiki/Phonotactics)
 // and phonemes (rules: sona.pona.la/wiki/Tokiponization)
 
-import { decode } from "./experimental.js";
+import { DROP } from "./drops.js";
+import { englishReading } from "./english.js";
+import { alignCost, decode } from "./experimental.js";
 import { textToTokens } from "./scripts.js";
 
 export interface Candidate {
@@ -121,9 +123,15 @@ interface State {
 
 const BEAM_WIDTH = 40;
 
+// swept on both splits, flat anywhere between .15 and .3
+const FUSE_WEIGHT = 0.2;
+
 // exported so eval tooling can adjust weights at runtime
 export const PEN = {
-  dropConsonant: -1.9,
+  // turns a rate in drops.ts into a cost. cells it has no count for fall
+  // through to the flat penalties below
+  dropScale: -0.85,
+  dropConsonant: -1.75,
   // a cluster member lost so its neighbour can stay an onset (Chris -> Kisi)
   clusterReduce: -1.75,
   dropCodaLiquid: -1.2,
@@ -132,24 +140,32 @@ export const PEN = {
   finalDrop: -0.75,
   dropVowel: -1.75,
   // second vowel of hiatus (Suomi -> Sumi)
-  hiatusDrop: -1.5,
+  hiatusDrop: -1.9,
   sameVowel: -0.05,
-  initialVowelDrop: -1.75,
+  initialVowelDrop: -1.95,
   // word-final nasal+vowel to coda n (Pechino -> Pesin)
   finalNasalClip: -1.1,
   // Latin r read as a tap (Peru -> Pelu)
   latinRAsL: -0.3,
   // swapping the final vowel for a (Kanado -> Kanata)
-  finalAShift: -0.55,
+  finalAShift: -1.15,
   // keeping a probably-silent English final e pronounced
-  pronouncedFinalE: -0.5,
-  epenthesis: -2,
-  glideNatural: -0.4,
-  glideOther: -1.25,
-  finalSToSyllable: -0.5,
+  pronouncedFinalE: -0.1,
+  epenthesis: -2.4,
+  // keeping a later cluster member as the onset instead of the first
+  clusterKeepLater: -0.8,
+  // except before a stop, where the s is what goes
+  clusterDropS: -0.4,
+  // echo vowel copied backward from the syllable before
+  echoBackward: -0.75,
+  // echo vowel the spelling points at neither way
+  echoOther: -0.6,
+  glideNatural: -0.05,
+  glideOther: -1.55,
+  finalSToSyllable: -0.15,
   finalMToN: -0.4,
   nasalAssimilation: -0.3,
-  syllableOver3: -1.1,
+  syllableOver3: -0.7,
 };
 
 function lastVowelOf(syls: string[]): string {
@@ -272,18 +288,26 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
         continue;
       }
 
-      // keep this consonant as an onset and drop the rest of the cluster (Chris -> Kisi).
+      // keep one consonant as the onset and drop the rest of the cluster.
+      // which one survives isn't always the first: Chris keeps its k, but
+      // Christopher drops the s of st and keeps the t (Kitape, not Kisope)
       let vi = st.i + 1;
       while (vi < ph.length && !VOWELS.has(ph[vi]!)) vi++;
       if (vi < ph.length && vi > st.i + 1) {
         const lost = (vi - st.i - 1) * PEN.clusterReduce;
-        for (const opt of cvOptions(ch, ph[vi]!, wordInitial)) {
+        for (let ci = st.i; ci < vi; ci++) {
+        const order = ci === st.i
+          ? 0
+          : ch === "s" && ci === st.i + 1
+          ? PEN.clusterDropS
+          : PEN.clusterKeepLater;
+        for (const opt of cvOptions(ph[ci]!, ph[vi]!, wordInitial)) {
           if (!CONSONANTS.has(opt.syl[0]!) && !wordInitial) continue;
           const syls = [...st.syls, opt.syl];
           const base = {
             i: vi + 1,
             syls,
-            score: st.score + opt.penalty + lost,
+            score: st.score + opt.penalty + lost + order,
           };
           if (ph[base.i] === "n" && codaAllowed(ph, base.i, syls)) {
             nextActive.push({
@@ -294,31 +318,57 @@ function beamSearch(phStr: string, bias: number, done: State[]): void {
           }
           nextActive.push(base);
         }
+        }
       }
 
-      // break the cluster with an echo vowel (Chris -> Kilisi).
-      const echo = nextVowelAhead(ph, st.i + 1) || lastVowelOf(st.syls) || "a";
+      // break the cluster with an echo vowel (Chris -> Kilisi). nothing in
+      // the spelling fixes which vowel, so offer several and let the score
+      // pick (Polska -> Posuka)
+      const ahead = nextVowelAhead(ph, st.i + 1);
+      const behind = lastVowelOf(st.syls);
+      const echoes = new Map<string, number>();
+      const offer = (v: string, pen: number) => {
+        if (!v) return;
+        const prev = echoes.get(v);
+        if (prev === undefined || pen > prev) echoes.set(v, pen);
+      };
+      // only charge for going against the spelling while there is one
+      offer(ahead, 0);
+      offer(behind, ahead ? PEN.echoBackward : 0);
+      for (const v of ["u", "i", "a"]) {
+        offer(v, ahead || behind ? PEN.echoOther : 0);
+      }
+      for (const [echo, echoPen] of echoes) {
       for (const opt of cvOptions(ch, echo, wordInitial)) {
         if (!CONSONANTS.has(opt.syl[0]!) && !wordInitial) continue;
         nextActive.push({
           i: st.i + 1,
           syls: [...st.syls, opt.syl],
-          score: st.score +
+          score: st.score + echoPen +
             opt.penalty +
             (next === undefined && ch === "s"
               ? PEN.finalSToSyllable
               : PEN.epenthesis),
         });
       }
+      }
       // a liquid after a vowel drops cheaply, like non-rhotic r (Malta -> Mata)
       const codaLiquid = (ch === "l" || ch === "w") &&
         st.i > 0 &&
         VOWELS.has(ph[st.i - 1]!);
+      // what a drop costs depends on the consonant and where it sits, so
+      // the flat penalties are only a fallback. rates are in drops.ts
+      const dropPos = st.i === 0 ? 0 : st.i === ph.length - 1 ? 2 : 1;
+      const rate = DROP[ch]?.[dropPos];
       nextActive.push({
         i: st.i + 1,
         syls: st.syls,
         score: st.score +
-          (next === undefined ? PEN.finalDrop : !st.syls.length
+          (rate != null
+            ? PEN.dropScale * Math.log(1 / rate)
+            : next === undefined
+            ? PEN.finalDrop
+            : !st.syls.length
             // losing the sound a name starts with is worse than losing
             // one in the middle (Christopher, not Witope)
             ? PEN.initialDrop
@@ -351,6 +401,12 @@ function tokiponizeWord(
         { ph: phStr, bias: PEN.pronouncedFinalE },
       ]
       : [{ ph: phStr, bias: 0 }];
+
+  // the community used both readings, Malta by its letters and John by
+  // its sound, so the dictionary competes level and goes last. ties fall
+  // to the spelling
+  const english = englishReading(raw);
+  if (english && english !== phStr) variants.push({ ph: english, bias: 0 });
 
   // try Latin r as a tap too (Peru -> Pelu)
   if (tokens.includes("rw")) {
@@ -388,30 +444,34 @@ function tokiponizeWord(
     if (prev === undefined || s > prev) seen.set(shifted, s);
   }
 
-  const ruled = [...seen.entries()]
+  const byScore = [...seen.entries()]
     .map(([name, score]) => ({ name, score: Math.round(score * 100) / 100 }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-  if (!options.experimental) return ruled;
+    .sort((a, b) => b.score - a.score);
+  if (!options.experimental) return byScore.slice(0, limit);
 
-  // mix in model suggestions; rules keep the top spot
-  const learned = decode(phStr, limit * 2)
-    .filter((c) => isValidName(c.name))
-    .map((c) => ({
-      name: c.name[0]!.toUpperCase() + c.name.slice(1),
-      score: c.score,
-    }));
-  const merged: Candidate[] = [];
-  const have = new Set<string>();
-  for (let k = 0; k < Math.max(ruled.length, learned.length); k++) {
-    for (const c of [ruled[k], learned[k]]) {
-      if (c && !have.has(c.name)) {
-        have.add(c.name);
-        merged.push(c);
-      }
+  // the penalties and the model disagree usefully, so price a wider slice
+  // under both and let the sum order them
+  const pool = Math.max(limit * 2, 8);
+  const fused: Candidate[] = [];
+  for (const c of byScore.slice(0, pool)) {
+    const cost = alignCost(phStr, c.name.toLowerCase());
+    // no path through the model, so keep the rule score
+    const score = Number.isFinite(cost) ? c.score - FUSE_WEIGHT * cost : c.score;
+    fused.push({ name: c.name, score: Math.round(score * 100) / 100 });
+  }
+  fused.sort((a, b) => b.score - a.score);
+
+  // names only the model reaches go after them
+  const have = new Set(fused.map((c) => c.name));
+  for (const c of decode(phStr, limit * 2)) {
+    if (!c.name) continue;
+    const name = c.name[0]!.toUpperCase() + c.name.slice(1);
+    if (isValidName(name) && !have.has(name)) {
+      have.add(name);
+      fused.push({ name, score: c.score });
     }
   }
-  return merged.slice(0, limit);
+  return fused.slice(0, limit);
 }
 
 /** how many words a name may have before the rest is ignored */
