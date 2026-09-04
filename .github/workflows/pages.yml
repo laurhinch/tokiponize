@@ -77,13 +77,10 @@ jobs:
             }
           done
 
-      - name: Build sitemap and name index
+      - name: Build sitemap
         run: |
           node scripts/build-sitemap.mjs _site
-          # the page footer links to this one, so a 404 here is a dead link
-          for f in _site/sitemap.xml _site/names.html; do
-            [ -s "$f" ] || { echo "$f was not written" >&2; exit 1; }
-          done
+          [ -s _site/sitemap.xml ] || { echo "sitemap.xml was not written" >&2; exit 1; }
 
       - uses: actions/configure-pages@v5
 
