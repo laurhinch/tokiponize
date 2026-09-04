@@ -41,7 +41,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "postbuild": "node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
-    "pretest": "tsc -p tsconfig.test.json",
+    "pretest": "npm run build && tsc -p tsconfig.test.json",
     "test": "node --test dist-test/test/*.test.js",
     "dev": "npm run build && node dist/cli.js",
     "changeset": "changeset",
