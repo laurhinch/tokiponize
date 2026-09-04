@@ -49,23 +49,12 @@ function rows(file) {
   return lines.slice(1).map((l) => Object.fromEntries(parse(l).map((c, i) => [head[i], c])));
 }
 
-// a country and a given name can be the same word, and Jordan only needs one
-const seen = new Set();
-const entries = [];
-const add = (row, kind) => {
-  const key = row.name.toLowerCase();
-  if (seen.has(key)) return;
-  seen.add(key);
-  entries.push({ name: row.name, kind, reading: row.rules_best ?? "" });
-};
-
-// endonym lookup is out of scope, so where the harvest found a settled
-// reading we do not produce, that page would rank on the wrong answer
-const all = rows("proper-nouns.csv");
-const nouns = all.filter((r) => r.agrees !== "no");
-for (const r of nouns) add(r, r.kind);
-for (const r of rows("popular-names.csv").slice(0, nameLimit)) add(r, "name");
-console.log(`proper nouns: ${nouns.length} of ${all.length}, dropped ${all.length - nouns.length} we contradict`);
+// Given names only. toki pona names a place or a language by what it calls
+// itself, so reading the English spelling is the wrong operation for those
+// and eval/data/proper-nouns.csv stays out of the index.
+const entries = rows("popular-names.csv")
+  .slice(0, nameLimit)
+  .map((r) => ({ name: r.name, reading: r.rules_best ?? "" }));
 
 const href = (name) => `${SITE}/?nimi=${encodeURIComponent(name)}`;
 const today = new Date().toISOString().slice(0, 10);
@@ -77,8 +66,7 @@ const urls = [
     `    <priority>0.8</priority>\n  </url>`,
 ];
 for (const e of entries) {
-  const priority = e.kind === "name" ? "0.6" : "0.7";
-  urls.push(`  <url>\n    <loc>${xml(href(e.name))}</loc>\n    <priority>${priority}</priority>\n  </url>`);
+  urls.push(`  <url>\n    <loc>${xml(href(e.name))}</loc>\n    <priority>0.6</priority>\n  </url>`);
 }
 
 const sitemap = join(outDir, "sitemap.xml");
@@ -91,26 +79,14 @@ writeFileSync(
 );
 console.log(`wrote ${sitemap}: ${urls.length} urls`);
 
-const GROUPS = [
-  ["country", "countries"],
-  ["city", "cities"],
-  ["language", "languages"],
-  ["name", "given names"],
-];
-
-const section = ([kind, heading]) => {
-  const mine = entries.filter((e) => e.kind === kind);
-  if (!mine.length) return "";
-  const items = mine
-    .map(
-      (e) =>
-        `<li><a href="${xml(href(e.name))}">${xml(e.name)}</a>` +
-        (e.reading ? ` <span>${xml(e.reading)}</span>` : "") +
-        `</li>`,
-    )
-    .join("\n");
-  return `<h2>${heading} <em>${mine.length}</em></h2>\n<ul>\n${items}\n</ul>`;
-};
+const items = entries
+  .map(
+    (e) =>
+      `<li><a href="${xml(href(e.name))}">${xml(e.name)}</a>` +
+      (e.reading ? ` <span>${xml(e.reading)}</span>` : "") +
+      `</li>`,
+  )
+  .join("\n");
 
 const page = `<!doctype html>
 <html lang="en">
@@ -118,7 +94,7 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>every name on nimi.toki.li</title>
-<meta name="description" content="Countries, cities, languages and given names written in toki pona, ${entries.length} of them.">
+<meta name="description" content="The ${entries.length} most common given names, each written in toki pona.">
 <link rel="canonical" href="${SITE}/names.html">
 <meta name="theme-color" content="#f4ecdd">
 <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
@@ -153,7 +129,9 @@ footer { max-width:52rem; margin:3rem auto 0; font-size:.9rem }
 <main>
 <h1>every name</h1>
 <p class="lede">${entries.length} names, each with the reading tokiponize gives it.</p>
-${GROUPS.map(section).filter(Boolean).join("\n")}
+<ul>
+${items}
+</ul>
 </main>
 <footer><a href="/">back to tokiponize</a></footer>
 </body>
