@@ -93,8 +93,22 @@ jobs:
             esac
             if echo "$api" | grep -q Jakata &&
                [ "$(echo "$img" | tail -1)" = 200 ] &&
-               echo "$page" | grep -qE 'og:title[^>]*Jakata'; then
+               echo "$page" | grep -qE 'og:title[^>]*Jakata' &&
+               # a homepage canonical here would deindex every name page
+               echo "$page" | grep -qE 'canonical[^>]*nimi=Jakarta' &&
+               # the reading has to be in the body, not just the tags
+               echo "$page" | grep -qE 'best-name">Jakata'; then
               echo "worker is answering"
+
+              # the zone's managed robots.txt may win over this route, which
+              # is a dashboard setting rather than a bad deploy
+              if get /robots.txt | grep -q "^Sitemap:"; then
+                echo "robots.txt is ours"
+              else
+                echo "::warning::the managed robots.txt is winning, so the" \
+                  "sitemap is not advertised. turn it off in the Cloudflare" \
+                  "dashboard, or submit the sitemap in Search Console"
+              fi
               exit 0
             fi
             echo "attempt $i: $codes"

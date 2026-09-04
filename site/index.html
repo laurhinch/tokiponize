@@ -4,8 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>tokiponize</title>
-    <meta name="description" content="Turn any name into phonotactically valid toki pona, with scored alternatives." />
+    <title>tokiponize: turn any name into toki pona</title>
+    <meta name="description" content="Turn any name into phonotactically valid toki pona, with scored alternatives. Reads Latin, Cyrillic, Greek, Hangul, kana and Devanagari spellings." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="tokiponize" />
     <meta property="og:title" content="tokiponize" />
@@ -15,11 +15,57 @@
     <meta property="og:image" content="https://nimi.toki.li/card.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="the name Lauren written as Lowen in toki pona" />
+    <meta property="og:locale" content="en_US" />
     <link rel="canonical" href="https://nimi.toki.li/" />
     <meta name="theme-color" content="#f4ecdd" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/png" sizes="512x512" href="icon.png" />
     <link rel="apple-touch-icon" href="icon.png" />
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebSite",
+                    "@id": "https://nimi.toki.li/#website",
+                    "url": "https://nimi.toki.li/",
+                    "name": "tokiponize",
+                    "description": "Turn any name into phonotactically valid toki pona, with scored alternatives.",
+                    "inLanguage": "en",
+                    "potentialAction": {
+                        "@type": "SearchAction",
+                        "target": {
+                            "@type": "EntryPoint",
+                            "urlTemplate": "https://nimi.toki.li/?nimi={search_term_string}"
+                        },
+                        "query-input": "required name=search_term_string"
+                    }
+                },
+                {
+                    "@type": "WebApplication",
+                    "@id": "https://nimi.toki.li/#app",
+                    "name": "tokiponize",
+                    "url": "https://nimi.toki.li/",
+                    "isPartOf": { "@id": "https://nimi.toki.li/#website" },
+                    "applicationCategory": "UtilitiesApplication",
+                    "operatingSystem": "Any",
+                    "browserRequirements": "Requires JavaScript",
+                    "license": "https://opensource.org/licenses/MIT",
+                    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+                    "author": {
+                        "@type": "Person",
+                        "name": "jan Lolin",
+                        "url": "https://github.com/laurhinch"
+                    },
+                    "sameAs": [
+                        "https://github.com/laurhinch/tokiponize",
+                        "https://www.npmjs.com/package/tokiponize"
+                    ]
+                }
+            ]
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Nunito:wght@400..900&display=swap"
@@ -828,7 +874,15 @@
     </footer>
 
     <script type="module">
-        import {tokiponize, syllabify, isValidName} from "./lib/index.js";
+        // english.js pulls in a 1.5MB lexicon, so a static import would put
+        // 482KB gzipped before first paint. Load it after the page is up
+        // instead. The worker server-renders #output for /?nimi=.
+        let lib = null;
+        let libPromise = null;
+        function loadLib() {
+            libPromise ??= import("./lib/index.js").then((m) => (lib = m));
+            return libPromise;
+        }
 
         const input = document.getElementById("name");
         const output = document.getElementById("output");
@@ -1036,10 +1090,9 @@
             history.replaceState(null, "", url);
         }
 
-        function render() {
+        async function render() {
             const raw = input.value.trim();
             syncUrl(raw);
-            output.replaceChildren();
 
             if (raw !== fixFor) {
                 fixFor = raw;
@@ -1051,14 +1104,21 @@
 
             if (!raw) {
                 fix.hidden = true;
-                output.append(el("p", "hint", t("hint")));
+                output.replaceChildren(el("p", "hint", t("hint")));
                 return;
             }
 
-            const candidates = tokiponize(raw, {
+            if (!lib) {
+                await loadLib();
+                // the input changed while loading, so a later render has it
+                if (input.value.trim() !== raw) return;
+            }
+
+            const candidates = lib.tokiponize(raw, {
                 limit: 5,
                 experimental: engine.value === "experimental",
             });
+            output.replaceChildren();
             if (!candidates.length) {
                 fix.hidden = true;
                 output.append(el("div", "no-result", t("noResult")));
@@ -1079,7 +1139,7 @@
             // syllables per word, so multi-word names stay readable
             const sylRow = el("div", "best-syls");
             for (const word of best.name.split(" ")) {
-                const syls = syllabify(word);
+                const syls = lib.syllabify(word);
                 if (syls) sylRow.append(el("span", null, syls.join(" · ")));
             }
             if (sylRow.childElementCount) bestBox.append(sylRow);
@@ -1111,7 +1171,8 @@
             const suggestion = fixName.value.trim().replace(/\s+/g, " ");
             if (!source || !suggestion) return;
             fixSay.classList.remove("bad");
-            if (!suggestion.split(" ").every(isValidName)) {
+            await loadLib();
+            if (!suggestion.split(" ").every(lib.isValidName)) {
                 fixSay.textContent = t("fixInvalid");
                 fixSay.classList.add("bad");
                 return;
@@ -1314,7 +1375,8 @@
             const reading = helpEl.input.value.trim().replace(/\s+/g, " ");
             if (!reading) return;
             helpEl.say.classList.remove("bad");
-            if (!reading.split(" ").every(isValidName)) {
+            await loadLib();
+            if (!reading.split(" ").every(lib.isValidName)) {
                 helpEl.say.textContent = t("fixInvalid");
                 helpEl.say.classList.add("bad");
                 return;
@@ -1381,6 +1443,9 @@
         const shared = new URL(location.href).searchParams.get("nimi");
         if (shared) input.value = shared;
         render();
+
+        if ("requestIdleCallback" in window) requestIdleCallback(() => loadLib());
+        else setTimeout(loadLib, 1200);
 
         // the card stays hidden until there is something in it to do
         loadQueue().then(() => {

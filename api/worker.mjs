@@ -10,7 +10,7 @@
 //
 // Deploy: npm run build && npx wrangler deploy -c api/wrangler.toml
 
-import { isValidName, tokiponize } from "../dist/index.js";
+import { isValidName, syllabify, tokiponize } from "../dist/index.js";
 import { prepareAtlas, renderCard } from "./og-card.mjs";
 
 const SITE = "https://nimi.toki.li";
@@ -40,6 +40,30 @@ const MAX_SEEN = 200;
 // better spent on a name nobody has read yet
 const RESPONSE_CAP = 20;
 const WINDOW_MS = 60_000;
+
+// Cloudflare serves a managed robots.txt on this zone with no Sitemap line.
+// AI_CRAWLERS mirrors what that file blocks, so removing a name here lets
+// that crawler back in.
+const AI_CRAWLERS = [
+  "Amazonbot",
+  "Applebot-Extended",
+  "Bytespider",
+  "CCBot",
+  "ClaudeBot",
+  "CloudflareBrowserRenderingCrawler",
+  "Google-Extended",
+  "GPTBot",
+  "meta-externalagent",
+  "PerplexityBot",
+];
+const ROBOTS =
+  `User-agent: *\n` +
+  `Content-Signal: search=yes,ai-train=no,use=reference\n` +
+  `Allow: /\n` +
+  // the JSON says what the pages say and costs a lookup per hit
+  `Disallow: /api/\n\n` +
+  AI_CRAWLERS.map((bot) => `User-agent: ${bot}\nDisallow: /\n`).join("\n") +
+  `\nSitemap: ${SITE}/sitemap.xml\n`;
 
 const reads = new Map();
 const writes = new Map();
@@ -330,11 +354,39 @@ async function ogImage(name) {
   });
 }
 
+// #output is filled from JavaScript, so without this every name URL ships
+// identical body HTML and reads as duplicate content. render() replaces it.
+function resultHtml(candidates) {
+  const [best, ...alts] = candidates;
+  const syls = best.name
+    .split(" ")
+    .map((word) => syllabify(word))
+    .filter(Boolean)
+    .map((s) => `<span>${escape(s.join(" · "))}</span>`)
+    .join("");
+  const chips = alts
+    .map(
+      (c) =>
+        `<span class="alt">${escape(c.name)} ` +
+        `<span class="score">${c.score}</span></span>`,
+    )
+    .join("");
+  return (
+    `<div class="best"><div class="best-row">` +
+    `<div class="best-name">${escape(best.name)}</div></div>` +
+    (syls ? `<div class="best-syls">${syls}</div>` : "") +
+    `</div>` +
+    (chips ? `<div class="alts" style="margin-top:0.75rem">${chips}</div>` : "")
+  );
+}
+
 // swap the preview tags in the page Pages already serves
 function rewriteMeta(res, name, candidates) {
   const best = candidates[0].name;
   const others = candidates.slice(1, 4).map((c) => c.name);
   const title = `${name} → ${best}`;
+  // Discord wants the short form, search wants the words someone typed
+  const pageTitle = `${name} in toki pona → ${best}`;
   const description = others.length
     ? `${name} in toki pona. Also ${others.join(", ")}.`
     : `${name} in toki pona.`;
@@ -350,8 +402,18 @@ function rewriteMeta(res, name, candidates) {
     .on('meta[name="description"]', set(description))
     .on('meta[property="og:url"]', set(url))
     .on('meta[property="og:image"]', set(image))
+    // the page ships the homepage canonical, which would deindex every name
+    .on('link[rel="canonical"]', {
+      element: (el) => el.setAttribute("href", url),
+    })
     .on("title", {
+      element: (el) => el.setInnerContent(escape(pageTitle), { html: true }),
+    })
+    .on("h1", {
       element: (el) => el.setInnerContent(escape(title), { html: true }),
+    })
+    .on("#output", {
+      element: (el) => el.setInnerContent(resultHtml(candidates), { html: true }),
     })
     .transform(res);
 }
@@ -374,9 +436,18 @@ export default {
 
       if (url.pathname === "/api/queue") return queue(url, env, ip);
 
+      if (url.pathname === "/robots.txt") {
+        return new Response(ROBOTS, {
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "cache-control": "public, max-age=86400",
+          },
+        });
+      }
+
       if (url.pathname === "/api/tokiponize") {
         if (limited(reads, ip, RATE_LIMIT)) {
-          return json({ error: "slow down: 120/minute" }, 429);
+          return json({ error: "slow down: 120/minute" }, 429, "no-store");
         }
         const name = clean(url.searchParams.get("name"));
         if (!name) return json({ error: "missing ?name=" }, 400);
@@ -398,7 +469,8 @@ export default {
 
       const name = clean(url.searchParams.get("nimi"));
       if (url.pathname === "/" && name) {
-        const candidates = tokiponize(name, { limit: 4 });
+        // the count render() uses, so hydrating does not reflow the chips
+        const candidates = tokiponize(name, { limit: 5 });
         const res = await fetch(request);
         if (candidates.length && res.headers.get("content-type")?.includes("text/html")) {
           return rewriteMeta(res, name, candidates);

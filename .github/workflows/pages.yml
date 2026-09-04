@@ -41,7 +41,8 @@ jobs:
           rm -f _site/lib/cli.js
 
           # a module the page cannot resolve takes down every script on it,
-          # so check the graph before this ships
+          # so check the graph before this ships, and before the minifier,
+          # which closes the space after `from`
           missing=0
           for f in _site/lib/*.js; do
             for dep in $(sed -n 's|.*from "\./\([^"]*\)".*|\1|p' "$f"); do
@@ -49,6 +50,35 @@ jobs:
             done
           done
           [ "$missing" = 0 ]
+
+      # Cloudflare already gzips and zstds what it serves, so this only shrinks
+      # the bytes going in. About a third of the critical path, lexicon aside:
+      # that one is a single string literal.
+      - name: Minify
+        run: |
+          npm i --no-save terser@5.37.0 html-minifier-terser@7.2.0
+
+          npx html-minifier-terser \
+            --collapse-whitespace --remove-comments \
+            --minify-css true --minify-js true \
+            site/index.html -o _site/index.html
+
+          for f in _site/lib/*.js; do
+            npx terser "$f" --module --compress --mangle -o "$f.min"
+            mv "$f.min" "$f"
+          done
+
+          # the worker rewrites the page through these, and losing one breaks
+          # every name URL silently
+          for sel in 'id="output"' '<h1' '<title' 'rel="canonical"' 'name="description"'; do
+            grep -q -- "$sel" _site/index.html || {
+              echo "minified page lost $sel, which the worker rewrites" >&2
+              exit 1
+            }
+          done
+
+      - name: Build sitemap
+        run: node scripts/build-sitemap.mjs _site
 
       - uses: actions/configure-pages@v5
 
