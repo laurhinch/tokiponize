@@ -17,6 +17,9 @@ const PAGE = readFileSync(at("site/index.html"), "utf8");
 // pages.yml ships everything in dist/ except the CLI, which is node-only
 const NOT_DEPLOYED = ["cli.js"];
 
+// scripts/build-sitemap.mjs writes these into _site, so they are not on disk
+const GENERATED = ["/names.html"];
+
 /** the /lib/x.js the browser asks for is dist/x.js on disk */
 const onDisk = (ref: string) =>
   ref.startsWith("lib/") ? at(`dist/${ref.slice(4)}`) : at(`site/${ref}`);
@@ -118,7 +121,8 @@ describe("files the deploy has to carry", () => {
     const refs = new Set(
       [...PAGE.matchAll(/(?:href|src)="([^"]+)"/g)]
         .map((m) => m[1])
-        .filter((url) => !/^(https?:|data:|#|mailto:)/.test(url)),
+        .filter((url) => !/^(https?:|data:|#|mailto:)/.test(url))
+        .filter((url) => !GENERATED.includes(url)),
     );
     assert.ok(refs.size, "no local assets found, the scrape must have broken");
     for (const ref of refs) {

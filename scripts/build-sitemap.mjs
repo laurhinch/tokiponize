@@ -1,6 +1,6 @@
-// sitemap.xml for the Pages site: the homepage, then a ?nimi= URL per proper
-// noun from eval/data/proper-nouns.csv and per popular given name from
-// eval/data/popular-names.csv.
+// sitemap.xml and names.html for the Pages site, both covering a ?nimi= URL
+// per row of eval/data/proper-nouns.csv and eval/data/popular-names.csv. The
+// sitemap gets them crawled, names.html is what links to them.
 //
 // Usage: node scripts/build-sitemap.mjs _site [--names 300]
 
@@ -49,37 +49,117 @@ function rows(file) {
   return lines.slice(1).map((l) => Object.fromEntries(parse(l).map((c, i) => [head[i], c])));
 }
 
-const today = new Date().toISOString().slice(0, 10);
-const urls = [
-  `  <url>\n    <loc>${SITE}/</loc>\n    <lastmod>${today}</lastmod>\n` +
-    `    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>`,
-];
-
 // a country and a given name can be the same word, and Jordan only needs one
 const seen = new Set();
-const add = (name, priority) => {
-  const key = name.toLowerCase();
+const entries = [];
+const add = (row, kind) => {
+  const key = row.name.toLowerCase();
   if (seen.has(key)) return;
   seen.add(key);
-  const loc = `${SITE}/?nimi=${encodeURIComponent(name)}`;
-  urls.push(`  <url>\n    <loc>${xml(loc)}</loc>\n    <priority>${priority}</priority>\n  </url>`);
+  entries.push({ name: row.name, kind, reading: row.rules_best ?? "" });
 };
 
 // endonym lookup is out of scope, so where the harvest found a settled
 // reading we do not produce, that page would rank on the wrong answer
 const all = rows("proper-nouns.csv");
 const nouns = all.filter((r) => r.agrees !== "no");
-const names = rows("popular-names.csv").slice(0, nameLimit);
-for (const r of nouns) add(r.name, "0.7");
-for (const r of names) add(r.name, "0.6");
+for (const r of nouns) add(r, r.kind);
+for (const r of rows("popular-names.csv").slice(0, nameLimit)) add(r, "name");
 console.log(`proper nouns: ${nouns.length} of ${all.length}, dropped ${all.length - nouns.length} we contradict`);
 
-const out = join(outDir, "sitemap.xml");
+const href = (name) => `${SITE}/?nimi=${encodeURIComponent(name)}`;
+const today = new Date().toISOString().slice(0, 10);
+
+const urls = [
+  `  <url>\n    <loc>${SITE}/</loc>\n    <lastmod>${today}</lastmod>\n` +
+    `    <changefreq>monthly</changefreq>\n    <priority>1.0</priority>\n  </url>`,
+  `  <url>\n    <loc>${SITE}/names.html</loc>\n    <lastmod>${today}</lastmod>\n` +
+    `    <priority>0.8</priority>\n  </url>`,
+];
+for (const e of entries) {
+  const priority = e.kind === "name" ? "0.6" : "0.7";
+  urls.push(`  <url>\n    <loc>${xml(href(e.name))}</loc>\n    <priority>${priority}</priority>\n  </url>`);
+}
+
+const sitemap = join(outDir, "sitemap.xml");
 writeFileSync(
-  out,
+  sitemap,
   `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.join("\n") +
     `\n</urlset>\n`,
 );
-console.log(`wrote ${out}: ${urls.length} urls`);
+console.log(`wrote ${sitemap}: ${urls.length} urls`);
+
+const GROUPS = [
+  ["country", "countries"],
+  ["city", "cities"],
+  ["language", "languages"],
+  ["name", "given names"],
+];
+
+const section = ([kind, heading]) => {
+  const mine = entries.filter((e) => e.kind === kind);
+  if (!mine.length) return "";
+  const items = mine
+    .map(
+      (e) =>
+        `<li><a href="${xml(href(e.name))}">${xml(e.name)}</a>` +
+        (e.reading ? ` <span>${xml(e.reading)}</span>` : "") +
+        `</li>`,
+    )
+    .join("\n");
+  return `<h2>${heading} <em>${mine.length}</em></h2>\n<ul>\n${items}\n</ul>`;
+};
+
+const page = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>every name on nimi.toki.li</title>
+<meta name="description" content="Countries, cities, languages and given names written in toki pona, ${entries.length} of them.">
+<link rel="canonical" href="${SITE}/names.html">
+<meta name="theme-color" content="#f4ecdd">
+<link rel="icon" type="image/png" sizes="512x512" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=Nunito:wght@400..900&display=swap" rel="stylesheet">
+<style>
+:root { --cream:#f4ecdd; --teal:#7ccfbe; --black:#332e26; --white:#fffdf6; --yellow:#ffd98c; }
+* { box-sizing:border-box }
+body { margin:0; padding:3rem 1rem 4rem; background:var(--cream);
+  background-image:radial-gradient(rgba(51,46,38,.08) 1px, transparent 1px); background-size:22px 22px;
+  color:var(--black); font-family:"Nunito","Segoe UI",sans-serif; font-weight:600 }
+main { max-width:52rem; margin:0 auto }
+h1 { display:inline-block; background:var(--yellow); border:3px solid var(--black); border-radius:10px;
+  box-shadow:4px 4px 0 var(--black); padding:.05em .55em .1em; text-transform:uppercase;
+  font-family:"Baloo 2","Nunito",sans-serif; font-size:1.6rem; transform:rotate(-1.2deg); margin:0 0 1rem }
+p.lede { color:#57503f; font-size:.95rem; max-width:34rem }
+h2 { font-family:"Baloo 2","Nunito",sans-serif; text-transform:uppercase; font-size:1rem;
+  letter-spacing:.04em; margin:2.5rem 0 .75rem }
+h2 em { font-style:normal; color:#6b6350; font-weight:400 }
+ul { list-style:none; padding:0; margin:0; display:grid; gap:.4rem;
+  grid-template-columns:repeat(auto-fill,minmax(13rem,1fr)) }
+li { background:var(--white); border:3px solid var(--black); border-radius:10px; padding:.45rem .7rem;
+  display:flex; justify-content:space-between; gap:.5rem; align-items:baseline }
+a { color:var(--black); text-decoration:none }
+a:hover { text-decoration:underline }
+li span { background:var(--teal); border-radius:6px; padding:0 .4em; font-size:.9rem }
+footer { max-width:52rem; margin:3rem auto 0; font-size:.9rem }
+</style>
+</head>
+<body>
+<main>
+<h1>every name</h1>
+<p class="lede">${entries.length} names, each with the reading tokiponize gives it.</p>
+${GROUPS.map(section).filter(Boolean).join("\n")}
+</main>
+<footer><a href="/">back to tokiponize</a></footer>
+</body>
+</html>
+`;
+
+const index = join(outDir, "names.html");
+writeFileSync(index, page);
+console.log(`wrote ${index}: ${entries.length} links`);
